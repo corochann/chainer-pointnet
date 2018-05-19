@@ -101,9 +101,9 @@ def main():
     trainer.extend(E.LogReport())
     trainer.extend(E.PrintReport(
         ['epoch', 'main/loss', 'main/cls_loss', 'main/trans_loss1',
-         'main/trans_loss2', 'main/accuracy',
-         'validation/main/loss', 'validation/main/cls_loss',
-         'validation/main/trans_loss1', 'validation/main/trans_loss2',
+         'main/trans_loss2', 'main/accuracy', 'validation/main/loss',
+         # 'validation/main/cls_loss',
+         # 'validation/main/trans_loss1', 'validation/main/trans_loss2',
          'validation/main/accuracy', 'lr', 'elapsed_time']))
     trainer.extend(E.ProgressBar(update_interval=10))
 
