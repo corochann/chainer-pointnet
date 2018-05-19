@@ -6,6 +6,7 @@ from chainer import links
 from chainer import reporter
 
 from chainer_pointnet.models.conv_block import ConvBlock
+from chainer_pointnet.models.linear_block import LinearBlock
 from chainer_pointnet.models.transform_net import TransformNet
 
 
@@ -24,7 +25,7 @@ def calc_trans_loss(t):
 
 class PointNetCls(chainer.Chain):
 
-    """Classification PointNet, input is BxNx3, output Bx40
+    """Classification PointNet
 
     Input is (minibatch, K, N, 1), output is (minibatch, out_dim)
 
@@ -60,12 +61,8 @@ class PointNetCls(chainer.Chain):
             self.conv_block4 = ConvBlock(64, 128, ksize=1, use_bn=use_bn)
             self.conv_block5 = ConvBlock(128, 1024, ksize=1, use_bn=use_bn)
 
-            # [Note]
-            # Original paper uses BN for fc layer as well.
-            # https://github.com/charlesq34/pointnet/blob/master/models/transform_nets.py#L34
-            # This chanier impl. skip BN for fc layer
-            self.fc6 = links.Linear(1024, 512)
-            self.fc7 = links.Linear(512, 256)
+            self.fc_block6 = LinearBlock(1024, 512, use_bn=use_bn)
+            self.fc_block7 = LinearBlock(512, 256, use_bn=use_bn)
             self.fc8 = links.Linear(256, out_dim)
 
         self.in_dim = in_dim
@@ -127,12 +124,13 @@ class PointNetCls(chainer.Chain):
         # Symmetric function: max pooling
         h = functions.max_pooling_2d(h, ksize=h.shape[2:])
         # h: (minibatch, K, 1, 1)
-        h = functions.relu(self.fc6(h))
-        if self.dropout_ratio > 0:
+        h = self.fc_block6(h)
+        if self.dropout_ratio >= 0:
             # original impl. uses `keep_prob=0.7`.
             h = functions.dropout(h, ratio=self.dropout_ratio)
-        h = functions.relu(self.fc7(h))
-        if self.dropout_ratio > 0:
+
+        h = self.fc_block7(h)
+        if self.dropout_ratio >= 0:
             h = functions.dropout(h, ratio=self.dropout_ratio)
         h = self.fc8(h)
         return h, t1, t2

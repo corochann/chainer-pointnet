@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 import argparse
+from distutils.util import strtobool
 import os
 import pickle
 
@@ -25,15 +26,18 @@ def main():
         description='ModelNet40 classification')
     # parser.add_argument('--conv-layers', '-c', type=int, default=4)
     parser.add_argument('--batchsize', '-b', type=int, default=32)
+    parser.add_argument('--dropout_ratio', type=float, default=0.3)
     parser.add_argument('--num_point', type=int, default=1024)
     parser.add_argument('--gpu', '-g', type=int, default=-1)
     parser.add_argument('--out', '-o', type=str, default='result')
-    parser.add_argument('--epoch', '-e', type=int, default=100)
+    parser.add_argument('--epoch', '-e', type=int, default=250)
     # parser.add_argument('--unit-num', '-u', type=int, default=16)
     parser.add_argument('--seed', '-s', type=int, default=777)
     parser.add_argument('--protocol', type=int, default=2)
     parser.add_argument('--model_filename', type=str, default='model.npz')
     parser.add_argument('--resume', type=str, default='')
+    parser.add_argument('--trans', type=strtobool, default='true')
+    parser.add_argument('--use_bn', type=strtobool, default='true')
     args = parser.parse_args()
 
     seed = args.seed
@@ -48,11 +52,13 @@ def main():
     # n_unit = args.unit_num
     # conv_layers = args.conv_layers
     if method == 'point_cls':
-        trans = False
-        use_bn = False
-        print('Train PointNetCls model... trans={} use_bn={}'.format(trans, use_bn))
+        trans = args.trans
+        use_bn = args.use_bn
+        dropout_ratio = args.dropout_ratio
+        print('Train PointNetCls model... trans={} use_bn={} dropout={}'
+              .format(trans, use_bn, dropout_ratio))
         model = PointNetCls(
-            out_dim=num_class, in_dim=3, middle_dim=64, dropout_ratio=0.0, # 0.3
+            out_dim=num_class, in_dim=3, middle_dim=64, dropout_ratio=dropout_ratio,
             trans=trans, trans_lam1=0.001, trans_lam2=0.001, use_bn=use_bn)
     else:
         raise ValueError('[ERROR] Invalid method {}'.format(method))
@@ -87,8 +93,8 @@ def main():
         observation_key,
         lambda trainer: trainer.updater.get_optimizer('main').alpha))
     trainer.extend(schedule_optimizer_value(
-        [0.1, 10.0, 30, 100, 150, 200, 230],
-        [0.005, 0.003, 0.001, 0.0003, 0.0001, 0.00003, 0.00001]))
+        [10, 20, 100, 150, 200, 230],
+        [0.003, 0.001, 0.0003, 0.0001, 0.00003, 0.00001]))
 
     trainer.extend(E.Evaluator(val_iter, classifier, device=args.gpu,))
     trainer.extend(E.snapshot(), trigger=(args.epoch, 'epoch'))
