@@ -2,3 +2,4 @@
 examples/modelnet40/data/modelnet40_ply_hdf5_2048/
 *.pyc
 experiments/modelnet40/data/modelnet40_ply_hdf5_2048/
+experiments/s3dis/data/
