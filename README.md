@@ -31,12 +31,23 @@ layers.
 Experiments in each dataset is located under `expriments` folder.
 Each folder is independent, so you can refer independently.
 
-### ModelNet
+### ModelNet40
 
-This is classification task of 40 category.
+This is point cloud classification task of 40 category.
 Download script & code is from [charlesq34/pointnet](https://github.com/charlesq34/pointnet)
 
  - http://modelnet.cs.princeton.edu/
+
+The dataset is automatically downloaded and preprocessed. 
+You can simply execute train code to train `PointNet` or `PointNetVanilla`.
+
+```angular2html
+# use gpu with id 0, train PointNetVanilla
+$ python train.py -g 0 --trans=false
+
+# use gpu with id 0, train PointNet 
+$ python train.py -g 0
+```
 
 ### S3DIS
 
@@ -47,6 +58,33 @@ Download the dataset from,
  
 Prerocessing code adopted from [charlesq34/pointnet](https://github.com/charlesq34/pointnet)
 under `third_party` directory.
+
+Steps:
+
+1. Go to download link: download S3DIS dataset from
+ [S3DIS Dataset](http://buildingparser.stanford.edu/dataset.html).
+ You need to send application form.
+ 
+2. Download `Stanford3dDataset_v1.2_Aligned_Version.zip` file (4GB),
+ place it under `s3dis/data` directory.
+
+2'. Fix mis label manually.
+
+`Stanford3dDataset_v1.2_Aligned_Version/Area_5/hallway_6/Annotations/ceiling_1.txt`
+has wrong charcter at line 180389. Please fix it manually.
+
+3. Preprocessing
+
+`collect_indoor3d_data.py` is for data re-organization and 
+`gen_indoor3d_h5.py` is to generate HDF5 files. (cite from [charlesq34/pointnet](https://github.com/charlesq34/pointnet/tree/master/sem_seg#dataset))
+
+```angular2html
+$ cd third_party
+$ python collect_indoor3d_data.py
+$ python gen_indoor3d_h5.py
+```
+
+4. Training
 
 
 ### ScanNet
