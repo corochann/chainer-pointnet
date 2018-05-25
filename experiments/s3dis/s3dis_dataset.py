@@ -6,8 +6,7 @@ import numpy as np
 from chainer_chemistry.datasets import NumpyTupleDataset
 
 
-def get_data_files(list_filename):
-    return [line.rstrip() for line in open(list_filename)]
+MAX_NUM_POINT = 4096
 
 
 def load_h5(h5_filename):
@@ -17,17 +16,11 @@ def load_h5(h5_filename):
     return data, label
 
 
-def get_dataset(test_area_int=6):
+def get_dataset(test_area_int=6, num_point=4096):
+    assert isinstance(test_area_int, int)
+    assert num_point <= MAX_NUM_POINT
+
     data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-    # all_files = get_data_files(
-    #     os.path.join(data_dir, 'indoor3d_sem_seg_hdf5_data/all_files.txt'))
-
-    # from glob import glob
-    # all_files = glob(
-    #     os.path.join(data_dir, 'indoor3d_sem_seg_hdf5_data/ply_data_all_0.h5'))
-    # print('allfiles', all_files)
-    # import IPython; IPython.embed()
-
     room_filelist = [line.rstrip() for line in open(
         os.path.join(data_dir, 'indoor3d_sem_seg_hdf5_data/room_filelist.txt'))]
 
@@ -51,8 +44,16 @@ def get_dataset(test_area_int=6):
 
     data_batches = np.concatenate(data_batch_list, 0)
     label_batches = np.concatenate(label_batch_list, 0)
-    print(data_batches.shape)
-    print(label_batches.shape)
+    print(data_batches.shape)  # (23585, 4096, 9)  batchsize, num_point, ch
+    print(label_batches.shape)  # (23585, 4096)    batchsize, num_point
+    # reduce point number num_point
+    assert data_batches.ndim == 3
+    assert label_batches.ndim == 2
+    assert data_batches.shape[0] == label_batches.shape[0]
+    assert data_batches.shape[1] == MAX_NUM_POINT
+    assert label_batches.shape[1] == MAX_NUM_POINT
+    data_batches = data_batches[:, :num_point, :].astype(np.float32)
+    label_batches = label_batches[:, :num_point].astype(np.int32)
     # data_batches (batch_size, num_point, k) -> (batch_size, k, num_point, 1)
     data_batches = np.transpose(data_batches, (0, 2, 1))[:, :, :, None]
 
