@@ -1,5 +1,7 @@
+import numpy
+
 import chainer
-from chainer import functions
+from chainer import functions, cuda
 from chainer import links
 from chainer import reporter
 
@@ -10,9 +12,9 @@ from chainer_pointnet.models.pointnet2.set_abstraction_block import \
     SetAbstractionModule
 
 
-class PointNet2ClsSSG(chainer.Chain):
+class PointNet2ClsMSG(chainer.Chain):
 
-    """Classification PointNet++ SSG
+    """Classification PointNet++ MSG (Multi Scale Grouping)
 
     Input is (minibatch, K, N, 1), output is (minibatch, out_dim)
 
@@ -25,15 +27,28 @@ class PointNet2ClsSSG(chainer.Chain):
 
     def __init__(self, out_dim, in_dim=3, dropout_ratio=0.5,
                  use_bn=True, compute_accuracy=True):
-        super(PointNet2ClsSSG, self).__init__()
+        super(PointNet2ClsMSG, self).__init__()
         with self.init_scope():
-            self.sam1 = SetAbstractionModule(
+            # initial_idx is set to ensure deterministic behavior of
+            # fathest_point_sampling
+            self.sam11 = SetAbstractionModule(
+                k=512, num_sample_in_region=16, radius=0.1,
+                mlp=[32, 32, 64], mlp2=None, initial_idx=0)
+            self.sam12 = SetAbstractionModule(
                 k=512, num_sample_in_region=32, radius=0.2,
-                mlp=[64, 64, 128], mlp2=None)
-            self.sam2 = SetAbstractionModule(
+                mlp=[64, 64, 128], mlp2=None, initial_idx=0)
+            self.sam13 = SetAbstractionModule(
+                k=512, num_sample_in_region=128, radius=0.4,
+                mlp=[64, 96, 128], mlp2=None, initial_idx=0)
+            self.sam21 = SetAbstractionModule(
+                k=128, num_sample_in_region=32, radius=0.2,
+                mlp=[64, 64, 128], mlp2=None, initial_idx=0)
+            self.sam22 = SetAbstractionModule(
                 k=128, num_sample_in_region=64, radius=0.4,
-                mlp=[128, 128, 256], mlp2=None)
-            # k, num_sample_in_region, radius are ignored when group_all=True
+                mlp=[128, 128, 256], mlp2=None, initial_idx=0)
+            self.sam23 = SetAbstractionModule(
+                k=128, num_sample_in_region=128, radius=0.8,
+                mlp=[128, 128, 256], mlp2=None, initial_idx=0)
             self.sam3 = SetAbstractionGroupAllModule(
                 mlp=[256, 512, 1024], mlp2=None)
 
@@ -54,9 +69,21 @@ class PointNet2ClsSSG(chainer.Chain):
 
         coord_points = functions.transpose(x[:, :, :, 0], (0, 2, 1))
         feature_points = None
-        coord_points, feature_points = self.sam1(coord_points, feature_points)
-        coord_points, feature_points = self.sam2(coord_points, feature_points)
-        coord_points, feature_points = self.sam3(coord_points, feature_points)
+        cp11, fp11 = self.sam11(coord_points, feature_points)
+        cp12, fp12 = self.sam12(coord_points, feature_points)
+        cp13, fp13 = self.sam13(coord_points, feature_points)
+        assert numpy.allclose(cuda.to_cpu(cp11.data), cuda.to_cpu(cp12.data))
+        assert numpy.allclose(cuda.to_cpu(cp11.data), cuda.to_cpu(cp13.data))
+
+        feature_points = functions.concat([fp11, fp12, fp13], axis=2)
+        cp21, fp21 = self.sam21(cp11, feature_points)
+        cp22, fp22 = self.sam21(cp11, feature_points)
+        cp23, fp23 = self.sam21(cp11, feature_points)
+        assert numpy.allclose(cuda.to_cpu(cp21.data), cuda.to_cpu(cp22.data))
+        assert numpy.allclose(cuda.to_cpu(cp21.data), cuda.to_cpu(cp23.data))
+        feature_points = functions.concat([fp21, fp22, fp23], axis=2)
+
+        coord_points, feature_points = self.sam3(cp21, feature_points)
         # coord (bs, k, coord), feature (bs, k, ch')
         h = self.fc_block4(feature_points)
         h = self.fc_block5(h)

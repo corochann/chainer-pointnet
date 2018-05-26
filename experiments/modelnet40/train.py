@@ -13,6 +13,7 @@ from chainer import training
 from chainer.training import extensions as E
 
 from chainer_pointnet.models.pointnet.pointnet_cls import PointNetCls
+from chainer_pointnet.models.pointnet2.pointnet2_cls_msg import PointNet2ClsMSG
 from chainer_pointnet.models.pointnet2.pointnet2_cls_ssg import PointNet2ClsSSG
 
 from ply_dataset import get_train_dataset, get_test_dataset
@@ -49,22 +50,25 @@ def main():
     method = args.method
     # n_unit = args.unit_num
     # conv_layers = args.conv_layers
+    trans = args.trans
+    use_bn = args.use_bn
+    dropout_ratio = args.dropout_ratio
     if method == 'point_cls':
-        trans = args.trans
-        use_bn = args.use_bn
-        dropout_ratio = args.dropout_ratio
         print('Train PointNetCls model... trans={} use_bn={} dropout={}'
               .format(trans, use_bn, dropout_ratio))
         model = PointNetCls(
             out_dim=num_class, in_dim=3, middle_dim=64, dropout_ratio=dropout_ratio,
             trans=trans, trans_lam1=0.001, trans_lam2=0.001, use_bn=use_bn)
     elif method == 'point2_cls_ssg':
-        # trans = args.trans
-        use_bn = args.use_bn
-        dropout_ratio = args.dropout_ratio
         print('Train PointNet2ClsSSG model... use_bn={} dropout={}'
               .format(use_bn, dropout_ratio))
         model = PointNet2ClsSSG(
+            out_dim=num_class, in_dim=3,
+            dropout_ratio=dropout_ratio, use_bn=use_bn)
+    elif method == 'point2_cls_msg':
+        print('Train PointNet2ClsMSG model... use_bn={} dropout={}'
+              .format(use_bn, dropout_ratio))
+        model = PointNet2ClsMSG(
             out_dim=num_class, in_dim=3,
             dropout_ratio=dropout_ratio, use_bn=use_bn)
     else:

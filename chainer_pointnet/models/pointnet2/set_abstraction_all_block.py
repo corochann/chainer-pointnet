@@ -2,19 +2,19 @@ import numpy
 
 import chainer
 from chainer import functions
+from chainer import links
 
 from chainer_pointnet.models.conv_block import ConvBlock
 from chainer_pointnet.utils.grouping import query_ball_by_diff
 from chainer_pointnet.utils.sampling import farthest_point_sampling
 
 
-class SetAbstractionModule(chainer.Chain):
+class SetAbstractionGroupAllModule(chainer.Chain):
 
-    def __init__(self, k, num_sample_in_region, radius,
-                 mlp, mlp2, in_channels=None, use_bn=True,
-                 activation=functions.relu, initial_idx=None, skip_initial=True):
+    def __init__(self, mlp, mlp2, in_channels=None, use_bn=True,
+                 activation=functions.relu):
         # k is number of sampled point (num_region)
-        super(SetAbstractionModule, self).__init__()
+        super(SetAbstractionGroupAllModule, self).__init__()
         # Feature Extractor channel list
         assert isinstance(mlp, list)
         fe_ch_list = [in_channels] + mlp
@@ -24,10 +24,7 @@ class SetAbstractionModule(chainer.Chain):
         assert isinstance(mlp2, list)
         head_ch_list = [mlp[-1]] + mlp2
         with self.init_scope():
-            self.sampling_grouping = SamplingGroupingModule(
-                k=k, num_sample_in_region=num_sample_in_region,
-                radius=radius, initial_idx=initial_idx,
-                skip_initial=skip_initial)
+            self.sampling_grouping = SamplingGroupingAllModule()
             self.feature_extractor_list = chainer.ChainList(
                 *[ConvBlock(fe_ch_list[i], fe_ch_list[i+1], ksize=1,
                             use_bn=use_bn, activation=activation
@@ -69,53 +66,30 @@ def _to_array(var):
     return var
 
 
-#TODO: this does not have parameter, change it to function instead of chain.
-class SamplingGroupingModule(chainer.Chain):
+class SamplingGroupingAllModule(chainer.Chain):
 
-    def __init__(self, k, num_sample_in_region, radius=None, use_coord=True,
-                 initial_idx=None, skip_initial=True):
-        super(SamplingGroupingModule, self).__init__()
-        # number of center point (sampled point)
-        self.k = k
-
+    def __init__(self, use_coord=True):
+        super(SamplingGroupingAllModule, self).__init__()
         # number of points grouped in each region with radius
-        self.radius = radius
-        self.num_sample_in_region = num_sample_in_region
         self.use_coord = use_coord
-        self.initial_idx = initial_idx
-        self.skip_initial = skip_initial
 
     def __call__(self, coord_points, feature_points=None):
         # input: coord_points (batch_size, num_point, coord_dim)
         # input: feature_points (batch_size, num_point, channel)
         batch_size, num_point, coord_dim = coord_points.shape
 
-        # sampling -> this only decides indices, calculation is done by array
-        farthest_indices, distances = farthest_point_sampling(
-            _to_array(coord_points), self.k, initial_idx=self.initial_idx,
-            skip_initial=self.skip_initial)
-        # grouping
-        grouped_indices = query_ball_by_diff(
-            distances, self.num_sample_in_region, radius=self.radius)
-
-        # grouped_indices (batch_size, k, num_sample)
-        # grouped_points (batch_size, k, num_sample, coord_dim)
-        grouped_points = coord_points[self.xp.arange(batch_size)[:, None, None], grouped_indices, :]
-        # center_points (batch_size, k, coord_dim) -> new_coord_points
-        center_points = coord_points[self.xp.arange(batch_size)[:, None], farthest_indices, :]
-
-        # calculate relative coordinate
-        grouped_points = grouped_points - functions.broadcast_to(
-            center_points[:, :, None, :], grouped_points.shape)
+        # grouped_points (batch_size, k=1, num_sample, coord_dim)
+        grouped_points = coord_points[:, None, :, :]
+        # center_points (batch_size, k=1, coord_dim) -> new_coord_points
+        center_points = self.xp.zeros((batch_size, 1, coord_dim),
+                                      self.xp.float32)
 
         if feature_points is None:
             new_feature_points = grouped_points
         else:
             # grouped_indices (batch_size, k, num_sample)
             # grouped_feature_points (batch_size, k, num_sample, channel)
-            grouped_feature_points = feature_points[
-                                     self.xp.arange(batch_size)[:, None, None],
-                                     grouped_indices, :]
+            grouped_feature_points = feature_points[:, None, :, :]
             if self.use_coord:
                 new_feature_points = functions.concat([grouped_points, grouped_feature_points], axis=3)
             else:
@@ -146,7 +120,7 @@ if __name__ == '__main__':
         pts = cupy.random.uniform(0, 1, (batch_size, num_point, coord_dim))
 
     pts = pts.astype(numpy.float32)
-    sam = SetAbstractionModule(k, num_sample_in_region, radius, mlp, mlp2=mlp2)
+    sam = SetAbstractionGroupAllModule(mlp=mlp, mlp2=mlp2)
 
     coord, h = sam(pts)
     print('coord', type(coord), coord.shape)  # (3, 5, 2) - (bs, k, coord)
