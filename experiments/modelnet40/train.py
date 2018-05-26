@@ -4,7 +4,6 @@ from __future__ import print_function
 import argparse
 from distutils.util import strtobool
 import os
-import pickle
 
 import chainer
 from chainer import serializers
@@ -12,11 +11,9 @@ from chainer import iterators
 from chainer import optimizers
 from chainer import training
 from chainer.training import extensions as E
-import numpy
 
-from chainer_chemistry.models.prediction import Classifier
-
-from chainer_pointnet.models.pointnet_cls import PointNetCls
+from chainer_pointnet.models.pointnet.pointnet_cls import PointNetCls
+from chainer_pointnet.models.pointnet2.pointnet2_cls_ssg import PointNet2ClsSSG
 
 from ply_dataset import get_train_dataset, get_test_dataset
 
@@ -25,6 +22,7 @@ def main():
     parser = argparse.ArgumentParser(
         description='ModelNet40 classification')
     # parser.add_argument('--conv-layers', '-c', type=int, default=4)
+    parser.add_argument('--method', '-m', type=str, default='point_cls')
     parser.add_argument('--batchsize', '-b', type=int, default=32)
     parser.add_argument('--dropout_ratio', type=float, default=0.3)
     parser.add_argument('--num_point', type=int, default=1024)
@@ -48,7 +46,7 @@ def main():
     val = get_test_dataset(num_point=args.num_point)
 
     # Network
-    method = 'point_cls'
+    method = args.method
     # n_unit = args.unit_num
     # conv_layers = args.conv_layers
     if method == 'point_cls':
@@ -60,6 +58,15 @@ def main():
         model = PointNetCls(
             out_dim=num_class, in_dim=3, middle_dim=64, dropout_ratio=dropout_ratio,
             trans=trans, trans_lam1=0.001, trans_lam2=0.001, use_bn=use_bn)
+    elif method == 'point2_cls_ssg':
+        # trans = args.trans
+        use_bn = args.use_bn
+        dropout_ratio = args.dropout_ratio
+        print('Train PointNet2ClsSSG model... use_bn={} dropout={}'
+              .format(use_bn, dropout_ratio))
+        model = PointNet2ClsSSG(
+            out_dim=num_class, in_dim=3,
+            dropout_ratio=dropout_ratio, use_bn=use_bn)
     else:
         raise ValueError('[ERROR] Invalid method {}'.format(method))
 
@@ -86,7 +93,7 @@ def main():
     trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
 
     from chainerex.training.extensions import schedule_optimizer_value
-    from chainer.training.extensions import observe_lr, observe_value
+    from chainer.training.extensions import observe_value
     # trainer.extend(observe_lr)
     observation_key = 'lr'
     trainer.extend(observe_value(

@@ -1,13 +1,10 @@
-import numpy
-
 import chainer
 from chainer import functions, cuda
 from chainer import links
 from chainer import reporter
 
 from chainer_pointnet.models.conv_block import ConvBlock
-from chainer_pointnet.models.linear_block import LinearBlock
-from chainer_pointnet.models.transform_net import TransformNet
+from chainer_pointnet.models.pointnet.transform_net import TransformNet
 
 
 def calc_trans_loss(t):
@@ -33,7 +30,7 @@ class PointNetSeg(chainer.Chain):
             out_dim (int): output dimension, number of class for classification
             in_dim: input dimension for each point. default is 3, (x, y, z).
             middle_dim (int): hidden layer
-            dropout_ratio (float): dropout ratio
+            dropout_ratio (float): dropout ratio, not used now.
             trans (bool): use TransformNet or not.
                 False means not to use TransformNet, corresponds to
                 PointNetVanilla. True corresponds to PointNet in the paper.
@@ -69,7 +66,6 @@ class PointNetSeg(chainer.Chain):
             self.conv10 = links.Convolution2D(128, out_dim, ksize=1)
 
         self.in_dim = in_dim
-        self.dropout_ratio = dropout_ratio
         self.trans = trans
         self.trans_lam1 = trans_lam1
         self.trans_lam2 = trans_lam2

@@ -59,15 +59,17 @@ def query_ball_by_diff(diff, num_sample, radius=None):
     """
 
     Args:
-        diff:
-        num_sample:
-        radius:
+        diff (numpy.ndarray or cupy.ndarray): 3-dim array
+            (batch_size, k, num_point)
+        num_sample (int): number of sample in each region
+        radius (float): radius of each inregion
 
     Returns (numpy.ndarray or cupy.ndarray): grouped indices
             3-dim array (batch_size, k, num_sample)
 
     """
     xp = cuda.get_array_module(diff)
+    batch_size, k, num_point = diff.shape
     diff_sorted_indices = xp.argsort(diff, axis=2)
     if radius is None:
         return diff_sorted_indices[:, :, :num_sample]

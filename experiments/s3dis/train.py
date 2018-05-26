@@ -4,7 +4,6 @@ from __future__ import print_function
 import argparse
 from distutils.util import strtobool
 import os
-import pickle
 
 import chainer
 from chainer import serializers
@@ -12,9 +11,8 @@ from chainer import iterators
 from chainer import optimizers
 from chainer import training
 from chainer.training import extensions as E
-import numpy
 
-from chainer_pointnet.models.pointnet_seg import PointNetSeg
+from chainer_pointnet.models.pointnet.pointnet_seg import PointNetSeg
 
 from s3dis_dataset import get_dataset
 
@@ -81,7 +79,7 @@ def main():
     trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
 
     from chainerex.training.extensions import schedule_optimizer_value
-    from chainer.training.extensions import observe_lr, observe_value
+    from chainer.training.extensions import observe_value
     # trainer.extend(observe_lr)
     observation_key = 'lr'
     trainer.extend(observe_value(

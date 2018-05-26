@@ -40,11 +40,12 @@ def farthest_point_sampling(pts, k, initial_idx=None, metrics=l2_norm,
         distances_dtype (): dtype of output `distances`
 
     Returns (tuple): `indices` and `distances`.
-        numpy.ndarray or cupy.ndarray
-        2-dim array (batch_size, k, )
-        indices of sampled farthest points.
-        `pts[indices[i, j]]` represents `i-th` batch element of `j-th`
-        farthest point.
+        indices (numpy.ndarray or cupy.ndarray): 2-dim array (batch_size, k, )
+            indices of sampled farthest points.
+            `pts[indices[i, j]]` represents `i-th` batch element of `j-th`
+            farthest point.
+        distances (numpy.ndarray or cupy.ndarray): 3-dim array
+            (batch_size, k, num_point)
 
     """
     if pts.ndim == 2:
@@ -66,7 +67,11 @@ def farthest_point_sampling(pts, k, initial_idx=None, metrics=l2_norm,
     batch_indices = xp.arange(batch_size)
     farthest_point = pts[batch_indices, indices[:, 0]]
     # minimum distances to the sampled farthest point
-    min_distances = metrics(farthest_point[:, None, :], pts)
+    try:
+        min_distances = metrics(farthest_point[:, None, :], pts)
+    except Exception as e:
+        import IPython; IPython.embed()
+
     if skip_initial:
         # Override 0-th `indices` by the farthest point of `initial_idx`
         indices[:, 0] = xp.argmax(min_distances, axis=1)

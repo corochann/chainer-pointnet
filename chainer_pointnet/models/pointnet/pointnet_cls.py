@@ -1,5 +1,3 @@
-import numpy
-
 import chainer
 from chainer import functions, cuda
 from chainer import links
@@ -7,7 +5,7 @@ from chainer import reporter
 
 from chainer_pointnet.models.conv_block import ConvBlock
 from chainer_pointnet.models.linear_block import LinearBlock
-from chainer_pointnet.models.transform_net import TransformNet
+from chainer_pointnet.models.pointnet.transform_net import TransformNet
 
 
 def calc_trans_loss(t):
@@ -33,7 +31,8 @@ class PointNetCls(chainer.Chain):
             out_dim (int): output dimension, number of class for classification
             in_dim: input dimension for each point. default is 3, (x, y, z).
             middle_dim (int): hidden layer
-            dropout_ratio (float): dropout ratio
+            dropout_ratio (float): dropout ratio, negative value indicates
+                not to use dropout.
             trans (bool): use TransformNet or not.
                 False means not to use TransformNet, corresponds to
                 PointNetVanilla. True corresponds to PointNet in the paper.
@@ -61,12 +60,14 @@ class PointNetCls(chainer.Chain):
             self.conv_block4 = ConvBlock(64, 128, ksize=1, use_bn=use_bn)
             self.conv_block5 = ConvBlock(128, 1024, ksize=1, use_bn=use_bn)
 
-            self.fc_block6 = LinearBlock(1024, 512, use_bn=use_bn)
-            self.fc_block7 = LinearBlock(512, 256, use_bn=use_bn)
+            # original impl. uses `keep_prob=0.7`.
+            self.fc_block6 = LinearBlock(
+                1024, 512, use_bn=use_bn, dropout_ratio=dropout_ratio)
+            self.fc_block7 = LinearBlock(
+                512, 256, use_bn=use_bn, dropout_ratio=dropout_ratio)
             self.fc8 = links.Linear(256, out_dim)
 
         self.in_dim = in_dim
-        self.dropout_ratio = dropout_ratio
         self.trans = trans
         self.trans_lam1 = trans_lam1
         self.trans_lam2 = trans_lam2
@@ -125,12 +126,6 @@ class PointNetCls(chainer.Chain):
         h = functions.max_pooling_2d(h, ksize=h.shape[2:])
         # h: (minibatch, K, 1, 1)
         h = self.fc_block6(h)
-        if self.dropout_ratio >= 0:
-            # original impl. uses `keep_prob=0.7`.
-            h = functions.dropout(h, ratio=self.dropout_ratio)
-
         h = self.fc_block7(h)
-        if self.dropout_ratio >= 0:
-            h = functions.dropout(h, ratio=self.dropout_ratio)
         h = self.fc8(h)
         return h, t1, t2

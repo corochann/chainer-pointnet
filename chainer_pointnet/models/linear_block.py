@@ -7,7 +7,7 @@ class LinearBlock(chainer.Chain):
 
     def __init__(self, in_size, out_size=None, nobias=False,
                  initialW=None, initial_bias=None, use_bn=True,
-                 activation=functions.relu):
+                 activation=functions.relu, dropout_ratio=-1):
         super(LinearBlock, self).__init__()
         with self.init_scope():
             self.linear = links.Linear(
@@ -17,6 +17,7 @@ class LinearBlock(chainer.Chain):
                 self.bn = links.BatchNormalization(out_size)
         self.activation = activation
         self.use_bn = use_bn
+        self.dropout_ratio = dropout_ratio
 
     def __call__(self, x):
         if self.use_bn:
@@ -25,4 +26,6 @@ class LinearBlock(chainer.Chain):
             h = self.linear(x)
         if self.activation is not None:
             h = self.activation(h)
+        if self.dropout_ratio >= 0:
+            h = functions.dropout(h, ratio=self.dropout_ratio)
         return h
