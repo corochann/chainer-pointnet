@@ -13,6 +13,7 @@ from chainer import training
 from chainer.training import extensions as E
 
 from chainer_pointnet.models.pointnet.pointnet_seg import PointNetSeg
+from chainer_pointnet.models.pointnet2.pointnet2_seg_ssg import PointNet2SegSSG
 
 from s3dis_dataset import get_dataset
 
@@ -20,6 +21,7 @@ from s3dis_dataset import get_dataset
 def main():
     parser = argparse.ArgumentParser(
         description='S3DIS segmentation')
+    parser.add_argument('--method', '-m', type=str, default='point_seg')
     parser.add_argument('--batchsize', '-b', type=int, default=32)
     parser.add_argument('--dropout_ratio', type=float, default=0.3)
     parser.add_argument('--num_point', type=int, default=4096)
@@ -30,7 +32,7 @@ def main():
     parser.add_argument('--protocol', type=int, default=2)
     parser.add_argument('--model_filename', type=str, default='model.npz')
     parser.add_argument('--resume', type=str, default='')
-    parser.add_argument('--trans', type=strtobool, default='true')
+    parser.add_argument('--trans', type=strtobool, default='false')
     parser.add_argument('--use_bn', type=strtobool, default='true')
     args = parser.parse_args()
 
@@ -43,16 +45,22 @@ def main():
     train, val = get_dataset(num_point=args.num_point)
 
     # Network
-    method = 'point_seg'
+    method = args.method
+    trans = args.trans
+    use_bn = args.use_bn
+    dropout_ratio = args.dropout_ratio
     if method == 'point_seg':
-        trans = args.trans
-        use_bn = args.use_bn
-        dropout_ratio = args.dropout_ratio
         print('Train PointNetSeg model... trans={} use_bn={} dropout={}'
               .format(trans, use_bn, dropout_ratio))
         model = PointNetSeg(
             out_dim=num_class, in_dim=in_dim, middle_dim=64, dropout_ratio=dropout_ratio,
             trans=trans, trans_lam1=0.001, trans_lam2=0.001, use_bn=use_bn)
+    elif method == 'point2_seg_ssg':
+        print('Train PointNet2SegSSG model... use_bn={} dropout={}'
+              .format(use_bn, dropout_ratio))
+        model = PointNet2SegSSG(
+            out_dim=num_class, in_dim=in_dim,
+            dropout_ratio=dropout_ratio, use_bn=use_bn)
     else:
         raise ValueError('[ERROR] Invalid method {}'.format(method))
 

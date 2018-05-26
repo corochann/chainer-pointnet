@@ -24,7 +24,7 @@ def query_ball_point(pts, indices, num_sample, radius=None, metrics=_l2_norm):
 
     `num_sample` nearest neighbor search for each `indices` among `pts`.
     When `radius` is set, query point must be less than `radius`,
-
+=
     Args:
         pts (numpy.ndarray or cupy.ndarray): input points
             3-dim array (batch_size, num_point, coord_dim)

@@ -69,18 +69,20 @@ class PointNet2ClsMSG(chainer.Chain):
 
         coord_points = functions.transpose(x[:, :, :, 0], (0, 2, 1))
         feature_points = None
-        cp11, fp11 = self.sam11(coord_points, feature_points)
-        cp12, fp12 = self.sam12(coord_points, feature_points)
-        cp13, fp13 = self.sam13(coord_points, feature_points)
-        assert numpy.allclose(cuda.to_cpu(cp11.data), cuda.to_cpu(cp12.data))
-        assert numpy.allclose(cuda.to_cpu(cp11.data), cuda.to_cpu(cp13.data))
+        cp11, fp11, _ = self.sam11(coord_points, feature_points)
+        cp12, fp12, _ = self.sam12(coord_points, feature_points)
+        cp13, fp13, _ = self.sam13(coord_points, feature_points)
+        # assert numpy.allclose(cuda.to_cpu(cp11.data), cuda.to_cpu(cp12.data))
+        # assert numpy.allclose(cuda.to_cpu(cp11.data), cuda.to_cpu(cp13.data))
+        del cp12, cp13
 
         feature_points = functions.concat([fp11, fp12, fp13], axis=2)
-        cp21, fp21 = self.sam21(cp11, feature_points)
-        cp22, fp22 = self.sam21(cp11, feature_points)
-        cp23, fp23 = self.sam21(cp11, feature_points)
-        assert numpy.allclose(cuda.to_cpu(cp21.data), cuda.to_cpu(cp22.data))
-        assert numpy.allclose(cuda.to_cpu(cp21.data), cuda.to_cpu(cp23.data))
+        cp21, fp21, _ = self.sam21(cp11, feature_points)
+        cp22, fp22, _ = self.sam21(cp11, feature_points)
+        cp23, fp23, _ = self.sam21(cp11, feature_points)
+        # assert numpy.allclose(cuda.to_cpu(cp21.data), cuda.to_cpu(cp22.data))
+        # assert numpy.allclose(cuda.to_cpu(cp21.data), cuda.to_cpu(cp23.data))
+        del cp22, cp23
         feature_points = functions.concat([fp21, fp22, fp23], axis=2)
 
         coord_points, feature_points = self.sam3(cp21, feature_points)

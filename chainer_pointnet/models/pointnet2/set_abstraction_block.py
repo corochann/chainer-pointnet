@@ -11,8 +11,9 @@ from chainer_pointnet.utils.sampling import farthest_point_sampling
 class SetAbstractionModule(chainer.Chain):
 
     def __init__(self, k, num_sample_in_region, radius,
-                 mlp, mlp2, in_channels=None, use_bn=True,
-                 activation=functions.relu, initial_idx=None, skip_initial=True):
+                 mlp, mlp2=None, in_channels=None, use_bn=True,
+                 activation=functions.relu, initial_idx=None,
+                 skip_initial=True, return_distance=False):
         # k is number of sampled point (num_region)
         super(SetAbstractionModule, self).__init__()
         # Feature Extractor channel list
@@ -27,7 +28,7 @@ class SetAbstractionModule(chainer.Chain):
             self.sampling_grouping = SamplingGroupingModule(
                 k=k, num_sample_in_region=num_sample_in_region,
                 radius=radius, initial_idx=initial_idx,
-                skip_initial=skip_initial)
+                skip_initial=skip_initial, return_distance=return_distance)
             self.feature_extractor_list = chainer.ChainList(
                 *[ConvBlock(fe_ch_list[i], fe_ch_list[i+1], ksize=1,
                             use_bn=use_bn, activation=activation
@@ -45,7 +46,7 @@ class SetAbstractionModule(chainer.Chain):
 
         # grouped_points (batch_size, k, num_sample, channel)
         # center_points  (batch_size, k, coord_dim)
-        grouped_points, center_points = self.sampling_grouping(
+        grouped_points, center_points, dist = self.sampling_grouping(
             coord_points, feature_points=feature_points)
         # set alias `h` -> (bs, channel, num_sample, k)
         # Note: transpose may be removed by optimizing shape sequence for sampling_groupoing
@@ -59,7 +60,8 @@ class SetAbstractionModule(chainer.Chain):
         for conv_block in self.head_list:
             h = conv_block(h)
         h = functions.transpose(h[:, :, 0, :], (0, 2, 1))
-        return center_points, h  # (bs, k, coord), h (bs, k, ch')
+        # points (bs, k, coord), h (bs, k, ch'), dist (bs, k, num_point)
+        return center_points, h, dist
 
 
 def _to_array(var):
@@ -73,7 +75,7 @@ def _to_array(var):
 class SamplingGroupingModule(chainer.Chain):
 
     def __init__(self, k, num_sample_in_region, radius=None, use_coord=True,
-                 initial_idx=None, skip_initial=True):
+                 initial_idx=None, skip_initial=True, return_distance=False):
         super(SamplingGroupingModule, self).__init__()
         # number of center point (sampled point)
         self.k = k
@@ -84,6 +86,7 @@ class SamplingGroupingModule(chainer.Chain):
         self.use_coord = use_coord
         self.initial_idx = initial_idx
         self.skip_initial = skip_initial
+        self.return_distance = return_distance
 
     def __call__(self, coord_points, feature_points=None):
         # input: coord_points (batch_size, num_point, coord_dim)
@@ -97,6 +100,8 @@ class SamplingGroupingModule(chainer.Chain):
         # grouping
         grouped_indices = query_ball_by_diff(
             distances, self.num_sample_in_region, radius=self.radius)
+        if not self.return_distance:
+            distances = None  # release memory
 
         # grouped_indices (batch_size, k, num_sample)
         # grouped_points (batch_size, k, num_sample, coord_dim)
@@ -122,7 +127,8 @@ class SamplingGroupingModule(chainer.Chain):
                 new_feature_points = grouped_feature_points
         # new_feature_points (batch_size, k, num_sample, channel')
         # center_points (batch_size, k, coord_dim) -> new_coord_points
-        return new_feature_points, center_points
+        # distances (batch_size, k, num_point) it is for feature_propagation
+        return new_feature_points, center_points, distances
 
 
 if __name__ == '__main__':

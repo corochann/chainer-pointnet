@@ -53,12 +53,13 @@ class PointNet2ClsSSG(chainer.Chain):
         assert x.shape[-1] == 1
 
         coord_points = functions.transpose(x[:, :, :, 0], (0, 2, 1))
-        feature_points = None
-        coord_points, feature_points = self.sam1(coord_points, feature_points)
-        coord_points, feature_points = self.sam2(coord_points, feature_points)
-        coord_points, feature_points = self.sam3(coord_points, feature_points)
-        # coord (bs, k, coord), feature (bs, k, ch')
-        h = self.fc_block4(feature_points)
+        # h: feature_points
+        h = None
+        coord_points, h, _ = self.sam1(coord_points, h)
+        coord_points, h, _ = self.sam2(coord_points, h)
+        coord_points, h = self.sam3(coord_points, h)
+        # coord (bs, k, coord), h: feature (bs, k, ch')
+        h = self.fc_block4(h)
         h = self.fc_block5(h)
         h = self.fc6(h)
         return h
