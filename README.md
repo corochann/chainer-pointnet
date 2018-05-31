@@ -1,7 +1,6 @@
 # chainer-pointnet
 
-chainer implementation of PointNet.
-
+Chainer implementation of PointNet, PointNet++
 
 Original implementation (in tensorflow) can be found on github
 
@@ -9,7 +8,7 @@ Original implementation (in tensorflow) can be found on github
 
 under MIT license.
 
-## model structure
+## Model structure
 
 `models/pointnet_cls` can be used for classification task.
 `trans` option represents to use `TransformNet` or not.
@@ -93,5 +92,10 @@ Point cloud semantic segmentation task of indoor scenes.
 
  - [ScanNet: Richly-annotated 3D Reconstructions of Indoor Scenes (CVPR 2017 Spotlight)](https://www.youtube.com/watch?v=Olx4OnoZWQQ)
 
+## LICENSE
+MIT License.
 
+No warranty or support for this implementation.
+Each model performance is not guaranteed, and may not achieve the score reported in each paper. Use it at your own risk.
 
+Please see the [LICENSE](https://github.com/corochann/chainer-pointnet/blob/master/LICENSE) file for details.
