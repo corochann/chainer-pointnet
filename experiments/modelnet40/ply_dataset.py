@@ -1,11 +1,14 @@
 import os
 
 import chainer
+from chainer.datasets import TransformDataset
 from chainer.datasets.concatenated_dataset import ConcatenatedDataset
 import numpy as np
 
 # data is downloaded when importing provider
 import provider
+
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -63,6 +66,9 @@ def get_test_dataset(num_point=1024):
         *(PlyDataset(filepath, num_point=num_point, augment=False) for filepath in test_files))
 
 
+
+
+
 if __name__ == '__main__':
     # --- PlyDataset check ---
     train_files = provider.getDataFiles(
@@ -76,3 +82,10 @@ if __name__ == '__main__':
     test = get_test_dataset()
     # import IPython; IPython.embed()
     print('train', len(train), 'test', len(test))
+
+    convert_to_kdtree = True
+    if convert_to_kdtree:
+        from chainer_pointnet.utils.kdtree import TransformKDTreeCls
+        train = TransformDataset(train, TransformKDTreeCls())
+        points, split_dims, t = train[1]
+        print(points.shape, split_dims.shape, t)

@@ -46,6 +46,9 @@ $ python train.py -g 0 --trans=false
 
 # use gpu with id 0, train PointNet 
 $ python train.py -g 0
+
+# use gpu with id 0, train KDNet 
+$ python train.py -g 0 --method=kdnet_cls
 ```
 
 ### S3DIS

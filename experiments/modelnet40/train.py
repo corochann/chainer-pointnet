@@ -10,13 +10,18 @@ from chainer import serializers
 from chainer import iterators
 from chainer import optimizers
 from chainer import training
+from chainer.dataset import to_device
+from chainer.datasets import TransformDataset, SubDataset
 from chainer.training import extensions as E
 
+from chainer_pointnet.models.kdnet.kdnet_cls import KDNetCls
 from chainer_pointnet.models.pointnet.pointnet_cls import PointNetCls
 from chainer_pointnet.models.pointnet2.pointnet2_cls_msg import PointNet2ClsMSG
 from chainer_pointnet.models.pointnet2.pointnet2_cls_ssg import PointNet2ClsSSG
 
 from ply_dataset import get_train_dataset, get_test_dataset
+
+from chainer_pointnet.utils.kdtree import calc_max_level
 
 
 def main():
@@ -40,19 +45,37 @@ def main():
     args = parser.parse_args()
 
     seed = args.seed
+    method = args.method
+    num_point = args.num_point
     num_class = 40
+    debug = False
 
     # Dataset preparation
-    train = get_train_dataset(num_point=args.num_point)
-    val = get_test_dataset(num_point=args.num_point)
+    train = get_train_dataset(num_point=num_point)
+    val = get_test_dataset(num_point=num_point)
+    if method == 'kdnet_cls':
+        from chainer_pointnet.utils.kdtree import TransformKDTreeCls
+        max_level = calc_max_level(num_point)
+        train = TransformDataset(train, TransformKDTreeCls(max_level=max_level))
+        val = TransformDataset(val, TransformKDTreeCls(max_level=max_level))
+        points, split_dims, t = train[0]
+        print('converted to kdtree dataset train', points.shape, split_dims.shape, t)
+        points, split_dims, t = val[0]
+        print('converted to kdtree dataset val', points.shape, split_dims.shape, t)
+
+    if debug:
+        # use few train dataset
+        train = SubDataset(train, 0, 50)
 
     # Network
-    method = args.method
     # n_unit = args.unit_num
     # conv_layers = args.conv_layers
     trans = args.trans
     use_bn = args.use_bn
     dropout_ratio = args.dropout_ratio
+    from chainer.dataset.convert import concat_examples
+    converter = concat_examples
+
     if method == 'point_cls':
         print('Train PointNetCls model... trans={} use_bn={} dropout={}'
               .format(trans, use_bn, dropout_ratio))
@@ -71,6 +94,27 @@ def main():
         model = PointNet2ClsMSG(
             out_dim=num_class, in_dim=3,
             dropout_ratio=dropout_ratio, use_bn=use_bn)
+    elif method == 'kdnet_cls':
+        print('Train KdNetCls model... use_bn={} dropout={}'
+              .format(use_bn, dropout_ratio))
+        model = KDNetCls(
+            out_dim=num_class, in_dim=3,
+            dropout_ratio=dropout_ratio)  # use_bn=use_bn
+
+        def kdnet_converter(batch, device=None, padding=None):
+            # concat_examples to CPU at first.
+            result = concat_examples(batch, device=None, padding=padding)
+            out_list = []
+            for elem in result:
+                if elem.dtype != object:
+                    # Send to GPU for int/float dtype array.
+                    out_list.append(to_device(device, elem))
+                else:
+                    # Do NOT send to GPU for dtype=object array.
+                    out_list.append(elem)
+            return tuple(out_list)
+
+        converter = kdnet_converter
     else:
         raise ValueError('[ERROR] Invalid method {}'.format(method))
 
@@ -92,7 +136,8 @@ def main():
     optimizer = optimizers.Adam()
     optimizer.setup(classifier)
 
-    updater = training.StandardUpdater(train_iter, optimizer, device=args.gpu)
+    updater = training.StandardUpdater(
+        train_iter, optimizer, converter=converter, device=args.gpu)
 
     trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
 
@@ -107,7 +152,8 @@ def main():
         [10, 20, 100, 150, 200, 230],
         [0.003, 0.001, 0.0003, 0.0001, 0.00003, 0.00001]))
 
-    trainer.extend(E.Evaluator(val_iter, classifier, device=args.gpu,))
+    trainer.extend(E.Evaluator(
+        val_iter, classifier, converter=converter, device=args.gpu))
     trainer.extend(E.snapshot(), trigger=(args.epoch, 'epoch'))
     trainer.extend(E.LogReport())
     trainer.extend(E.PrintReport(
