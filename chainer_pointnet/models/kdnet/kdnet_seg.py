@@ -2,6 +2,7 @@ import chainer
 from chainer import links, reporter, functions
 
 from chainer_pointnet.models.kdnet.kdconv import KDConv
+from chainer_pointnet.models.kdnet.kddeconv import KDDeconv
 
 
 class KDNetSeg(chainer.Chain):
@@ -42,6 +43,10 @@ class KDNetSeg(chainer.Chain):
             self.kdconvs = chainer.ChainList(
                 *[KDConv(ch_list[i], ch_list[i+1], use_bn=use_bn, cdim=cdim)
                   for i in range(len(ch_list)-1)])
+            self.kddeconvs = chainer.ChainList(
+                *[KDDeconv(ch_list[-i], in_channels_skip=ch_list[-i-1],
+                           out_channels=ch_list[-i-1], use_bn=use_bn, cdim=cdim)
+                  for i in range(1, len(ch_list))])
             self.linear = links.Linear(ch_list[-1], out_dim)
         self.compute_accuracy = compute_accuracy
         self.max_level = max_level
@@ -50,11 +55,15 @@ class KDNetSeg(chainer.Chain):
     def calc(self, x, split_dims):
         bs = len(split_dims)
         h = x
+        h_list = [h]
         for d, kdconv in enumerate(self.kdconvs):
             level = self.max_level - d - 1
             split_dim = self.xp.array(
                 [split_dims[i, level] for i in range(bs)])
             h = kdconv(h, split_dim)
+            h_list.append(h)
+
+
         if self.dropout_ratio > 0.:
             h = functions.dropout(h, self.dropout_ratio)
         return self.linear(h)
@@ -81,10 +90,9 @@ if __name__ == '__main__':
     point_set = numpy.random.rand(num_point, dim).astype(numpy.float32)
     print('point_set', point_set.shape)
     points, split_dims, kdtree, split_positions = construct_kdtree_data(
-        point_set, max_level=7, calc_split_positions=True)
+        point_set, max_level=max_level, calc_split_positions=True)
     print('points', points.shape)  # 128 point here!
-    # kdconv = KDConv(3, 8)
-    kdnet = KDNetCls(3, depth=7)
+    kdnet = KDNetSeg(3, max_level=max_level)
     split_dims = numpy.array(split_dims)
     print('split_dims', split_dims.shape, split_dims.dtype)
     pts = numpy.transpose(points, (1, 0))[None, :, :, None]
