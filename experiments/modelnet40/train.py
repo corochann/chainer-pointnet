@@ -47,8 +47,17 @@ def main():
     seed = args.seed
     method = args.method
     num_point = args.num_point
+    out_dir = args.out
     num_class = 40
     debug = False
+    try:
+        # os.makedirs(out_dir, exist_ok=True)
+        import chainerex.utils as cl
+        fp = os.path.join(out_dir, 'args.json')
+        cl.save_json(fp, vars(args))
+        print('save args to', fp)
+    except ImportError:
+        pass
 
     # Dataset preparation
     train = get_train_dataset(num_point=num_point)
@@ -129,7 +138,7 @@ def main():
     load_model = False
     if load_model:
         serializers.load_npz(
-            os.path.join(args.out, args.model_filename), classifier)
+            os.path.join(out_dir, args.model_filename), classifier)
     if device >= 0:
         chainer.cuda.get_device_from_id(device).use()
         classifier.to_gpu()  # Copy the model to the GPU
@@ -140,7 +149,7 @@ def main():
     updater = training.StandardUpdater(
         train_iter, optimizer, converter=converter, device=args.gpu)
 
-    trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
+    trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=out_dir)
 
     from chainerex.training.extensions import schedule_optimizer_value
     from chainer.training.extensions import observe_value
@@ -172,9 +181,9 @@ def main():
     # --- save classifier ---
     # protocol = args.protocol
     # classifier.save_pickle(
-    #     os.path.join(args.out, args.model_filename), protocol=protocol)
+    #     os.path.join(out_dir, args.model_filename), protocol=protocol)
     serializers.save_npz(
-        os.path.join(args.out, args.model_filename), classifier)
+        os.path.join(out_dir, args.model_filename), classifier)
 
 
 if __name__ == '__main__':

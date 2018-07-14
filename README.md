@@ -119,6 +119,8 @@ $ python train.py -g 0
 
 # use gpu with id 0, train KDNet 
 $ python train.py -g 0 --method=kdnet_cls --dropout_ratio=0 --use_bn=1
+$ python train.py -g 0 --method=kdnet_cls --dropout_ratio=0.3 --use_bn=1 --out=results/kdnet
+python train.py -g 0 --method=kdnet_cls --dropout_ratio=0.3 --use_bn=1 --out=results/kdnet_small
 ```
 
 ### S3DIS [6]
