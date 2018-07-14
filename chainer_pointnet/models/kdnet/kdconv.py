@@ -5,7 +5,7 @@ from chainer import functions, links
 class KDConv(chainer.Chain):
 
     def __init__(self, in_channels, out_channels, ksize=1, stride=1, pad=0,
-                 nobias=False, initialW=None, initial_bias=None,
+                 nobias=False, initialW=None, initial_bias=None, use_bn=True,
                  activation=functions.relu, cdim=3):
         # cdim: coordinate dimension, usually 3 (x, y, z).
         super(KDConv, self).__init__()
@@ -15,9 +15,12 @@ class KDConv(chainer.Chain):
                 in_ch, out_channels * cdim, ksize=ksize,
                 stride=stride, pad=pad, nobias=nobias, initialW=initialW,
                 initial_bias=initial_bias)
+            if use_bn:
+                self.bn = links.BatchNormalization(out_channels)
         self.out_channels = out_channels
         self.cdim = cdim
         self.activation = activation
+        self.use_bn = use_bn
 
     def __call__(self, x, split_dim):
         assert x.ndim == 4
@@ -41,6 +44,8 @@ class KDConv(chainer.Chain):
         x = functions.transpose(x, (0, 2, 1))
         x = functions.reshape(x, (bs, self.out_channels, num_point//2, 1))
         # x: (batch_size, out_channels, num_point//2, 1)
+        if self.use_bn:
+            x = self.bn(x)
         if self.activation is not None:
             x = self.activation(x)
         return x

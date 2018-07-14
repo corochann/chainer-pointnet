@@ -17,8 +17,8 @@ class KDNetCls(chainer.Chain):
             compute_accuracy (bool): compute & report accuracy or not
     """
 
-    def __init__(self, out_dim, in_dim=3, dropout_ratio=0.5,
-                 compute_accuracy=True, depth=10):
+    def __init__(self, out_dim, in_dim=3, depth=10, dropout_ratio=0.0,
+                 compute_accuracy=True, use_bn=True, cdim=3):
         super(KDNetCls, self).__init__()
         if depth <= 10:
             # depth 10
@@ -35,11 +35,12 @@ class KDNetCls(chainer.Chain):
                                       .format(depth))
         with self.init_scope():
             self.kdconvs = chainer.ChainList(
-                *[KDConv(ch_list[i], ch_list[i+1]) for i in
-                  range(len(ch_list)-1)])
-            self.linear = links.Linear(None, out_dim)
+                *[KDConv(ch_list[i], ch_list[i+1], use_bn=use_bn, cdim=cdim)
+                  for i in range(len(ch_list)-1)])
+            self.linear = links.Linear(ch_list[-1], out_dim)
         self.compute_accuracy = compute_accuracy
         self.depth = depth
+        self.dropout_ratio = dropout_ratio
 
     def calc(self, x, split_dims):
         bs = len(split_dims)
@@ -49,6 +50,8 @@ class KDNetCls(chainer.Chain):
             split_dim = self.xp.array(
                 [split_dims[i, level] for i in range(bs)])
             h = kdconv(h, split_dim)
+        if self.dropout_ratio > 0.:
+            h = functions.dropout(h, self.dropout_ratio)
         return self.linear(h)
 
     def __call__(self, x, split_dims, t):

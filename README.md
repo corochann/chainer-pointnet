@@ -48,7 +48,7 @@ $ python train.py -g 0 --trans=false
 $ python train.py -g 0
 
 # use gpu with id 0, train KDNet 
-$ python train.py -g 0 --method=kdnet_cls
+$ python train.py -g 0 --method=kdnet_cls --dropout_ratio=0 --use_bn=1
 ```
 
 ### S3DIS

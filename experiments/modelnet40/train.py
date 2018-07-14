@@ -56,6 +56,7 @@ def main():
     if method == 'kdnet_cls':
         from chainer_pointnet.utils.kdtree import TransformKDTreeCls
         max_level = calc_max_level(num_point)
+        print('kdnet_cls max_level {}'.format(max_level))
         train = TransformDataset(train, TransformKDTreeCls(max_level=max_level))
         val = TransformDataset(val, TransformKDTreeCls(max_level=max_level))
         points, split_dims, t = train[0]
@@ -99,7 +100,7 @@ def main():
               .format(use_bn, dropout_ratio))
         model = KDNetCls(
             out_dim=num_class, in_dim=3,
-            dropout_ratio=dropout_ratio)  # use_bn=use_bn
+            dropout_ratio=dropout_ratio, use_bn=use_bn, depth=max_level)
 
         def kdnet_converter(batch, device=None, padding=None):
             # concat_examples to CPU at first.
