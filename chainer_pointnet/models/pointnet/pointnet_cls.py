@@ -33,6 +33,7 @@ class PointNetCls(chainer.Chain):
             middle_dim (int): hidden layer
             dropout_ratio (float): dropout ratio, negative value indicates
                 not to use dropout.
+            use_bn (bool): use batch normalization or not.
             trans (bool): use TransformNet or not.
                 False means not to use TransformNet, corresponds to
                 PointNetVanilla. True corresponds to PointNet in the paper.

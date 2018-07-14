@@ -31,6 +31,7 @@ class PointNetSeg(chainer.Chain):
             in_dim: input dimension for each point. default is 3, (x, y, z).
             middle_dim (int): hidden layer
             dropout_ratio (float): dropout ratio, not used now.
+            use_bn (bool): use batch normalization or not.
             trans (bool): use TransformNet or not.
                 False means not to use TransformNet, corresponds to
                 PointNetVanilla. True corresponds to PointNet in the paper.

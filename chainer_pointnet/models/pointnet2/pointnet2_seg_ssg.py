@@ -4,11 +4,8 @@ from chainer import links
 from chainer import reporter
 
 from chainer_pointnet.models.conv_block import ConvBlock
-from chainer_pointnet.models.linear_block import LinearBlock
 from chainer_pointnet.models.pointnet2.feature_propagation_block import \
     FeaturePropagationModule
-from chainer_pointnet.models.pointnet2.set_abstraction_all_block import \
-    SetAbstractionGroupAllModule
 from chainer_pointnet.models.pointnet2.set_abstraction_block import \
     SetAbstractionModule
 
@@ -23,6 +20,7 @@ class PointNet2SegSSG(chainer.Chain):
             out_dim (int): output dimension, number of class for classification
             in_dim (int): input dimension for each point. default is 3, (x, y, z).
             dropout_ratio (float): dropout ratio
+            use_bn (bool): use batch normalization or not.
             compute_accuracy (bool): compute & report accuracy or not
     """
 

@@ -100,7 +100,7 @@ def main():
               .format(use_bn, dropout_ratio))
         model = KDNetCls(
             out_dim=num_class, in_dim=3,
-            dropout_ratio=dropout_ratio, use_bn=use_bn, depth=max_level)
+            dropout_ratio=dropout_ratio, use_bn=use_bn, max_level=max_level)
 
         def kdnet_converter(batch, device=None, padding=None):
             # concat_examples to CPU at first.

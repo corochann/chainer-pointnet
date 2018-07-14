@@ -4,9 +4,9 @@ from chainer import links, reporter, functions
 from chainer_pointnet.models.kdnet.kdconv import KDConv
 
 
-class KDNetCls(chainer.Chain):
+class KDNetSeg(chainer.Chain):
 
-    """Classification KD-Network
+    """Segmentation KD-Network
 
     Input is points (minibatch, K, N, 1) and split_dims (minibatch, max_level)
     output is (minibatch, out_dim).
@@ -24,7 +24,7 @@ class KDNetCls(chainer.Chain):
 
     def __init__(self, out_dim, in_dim=3, max_level=10, dropout_ratio=0.0,
                  use_bn=True, compute_accuracy=True, cdim=3):
-        super(KDNetCls, self).__init__()
+        super(KDNetSeg, self).__init__()
         if max_level <= 10:
             # depth 10
             ch_list = [in_dim] + [32, 64, 64, 128, 128, 256, 256,
@@ -84,7 +84,7 @@ if __name__ == '__main__':
         point_set, max_level=7, calc_split_positions=True)
     print('points', points.shape)  # 128 point here!
     # kdconv = KDConv(3, 8)
-    kdnet = KDNetCls(3, max_level=7)
+    kdnet = KDNetCls(3, depth=7)
     split_dims = numpy.array(split_dims)
     print('split_dims', split_dims.shape, split_dims.dtype)
     pts = numpy.transpose(points, (1, 0))[None, :, :, None]
