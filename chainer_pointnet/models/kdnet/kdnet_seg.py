@@ -1,6 +1,7 @@
 import chainer
 from chainer import links, reporter, functions
 
+from chainer_pointnet.models.conv_block import ConvBlock
 from chainer_pointnet.models.kdnet.kdconv import KDConv
 from chainer_pointnet.models.kdnet.kddeconv import KDDeconv
 
@@ -30,24 +31,28 @@ class KDNetSeg(chainer.Chain):
             # depth 10
             ch_list = [in_dim] + [32, 64, 64, 128, 128, 256, 256,
                                   512, 512, 128]
-            ch_list = ch_list[:max_level + 1]
         elif max_level <= 15:
             # depth 15
             ch_list = [in_dim] + [16, 16, 32, 32, 64, 64, 128, 128, 256, 256,
                                   512, 512, 1024, 1024, 128]
-            ch_list = ch_list[:max_level + 1]
         else:
             raise NotImplementedError('depth {} is not implemented yet'
                                       .format(max_level))
+        ch_list = ch_list[:max_level + 1]
+        out_ch_list = ch_list.copy()
+        out_ch_list[0] = 16
         with self.init_scope():
             self.kdconvs = chainer.ChainList(
                 *[KDConv(ch_list[i], ch_list[i+1], use_bn=use_bn, cdim=cdim)
                   for i in range(len(ch_list)-1)])
             self.kddeconvs = chainer.ChainList(
-                *[KDDeconv(ch_list[-i], in_channels_skip=ch_list[-i-1],
-                           out_channels=ch_list[-i-1], use_bn=use_bn, cdim=cdim)
-                  for i in range(1, len(ch_list))])
-            self.linear = links.Linear(ch_list[-1], out_dim)
+                *[KDDeconv(out_ch_list[-i], in_channels_skip=ch_list[-i-1],
+                           out_channels=out_ch_list[-i-1], use_bn=use_bn,
+                           cdim=cdim)
+                  for i in range(1, len(out_ch_list))])
+            self.conv_block = ConvBlock(
+                out_ch_list[0], out_ch_list[0], ksize=1, use_bn=use_bn)
+            self.conv = links.Convolution2D(out_ch_list[0], out_dim, ksize=1)
         self.compute_accuracy = compute_accuracy
         self.max_level = max_level
         self.dropout_ratio = dropout_ratio
@@ -63,13 +68,28 @@ class KDNetSeg(chainer.Chain):
             h = kdconv(h, split_dim)
             h_list.append(h)
 
+        h_list.pop(-1)  # don't use last h as skip connection.
+        for d, kddeconv in enumerate(self.kddeconvs):
+            level = d
+            # TODO: use cache
+            split_dim = self.xp.array(
+                [split_dims[i, level] for i in range(bs)])
+            h_skip = h_list.pop(-1)
+            # print('h h_skip', h.shape, h_skip.shape, level, len(h_list))
+            h = kddeconv(h, split_dim, h_skip)
+        assert len(h_list) == 0
 
         if self.dropout_ratio > 0.:
             h = functions.dropout(h, self.dropout_ratio)
-        return self.linear(h)
+        h = self.conv_block(h)
+        h = self.conv(h)
+        return h[:, :, :, 0]
 
     def __call__(self, x, split_dims, t):
         h = self.calc(x, split_dims)
+        bs, ch, n = h.shape
+        h = functions.reshape(functions.transpose(h, (0, 2, 1)), (bs * n, ch))
+        t = functions.reshape(t, (bs * n,))
         cls_loss = functions.softmax_cross_entropy(h, t)
         loss = cls_loss
         reporter.report({'loss': loss}, self)
@@ -89,10 +109,10 @@ if __name__ == '__main__':
     dim = 3
     point_set = numpy.random.rand(num_point, dim).astype(numpy.float32)
     print('point_set', point_set.shape)
-    points, split_dims, kdtree, split_positions = construct_kdtree_data(
+    points, split_dims, inds, kdtree, split_positions = construct_kdtree_data(
         point_set, max_level=max_level, calc_split_positions=True)
     print('points', points.shape)  # 128 point here!
-    kdnet = KDNetSeg(3, max_level=max_level)
+    kdnet = KDNetSeg(3, max_level=max_level, use_bn=False)
     split_dims = numpy.array(split_dims)
     print('split_dims', split_dims.shape, split_dims.dtype)
     pts = numpy.transpose(points, (1, 0))[None, :, :, None]

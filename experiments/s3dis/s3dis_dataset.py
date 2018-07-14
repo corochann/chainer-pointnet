@@ -86,3 +86,14 @@ if __name__ == '__main__':
     print('train_x', train_x.shape, 'train_y', train_y.shape)
     test_x, test_y = test[3]
     print('test_x', test_x.shape, 'test_y', test_y.shape)
+
+    convert_to_kdtree = True
+    if convert_to_kdtree:
+        from chainer.datasets import TransformDataset
+        from chainer_pointnet.utils.kdtree import TransformKDTreeSeg, \
+            calc_max_level
+        num_point = train_x.shape[1]
+        max_level = calc_max_level(num_point)
+        train = TransformDataset(train, TransformKDTreeSeg(max_level=max_level))
+        points, split_dims, t = train[1]
+        print('transformed', points.shape, split_dims.shape, t.shape)

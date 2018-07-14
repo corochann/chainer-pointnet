@@ -160,6 +160,17 @@ $ python gen_indoor3d_h5.py
 
 4. Training
 
+```bash
+# use gpu with id 0, train PointNetVanilla
+$ python train.py -g 0 --method=point_seg --trans=false
+
+# use gpu with id 0, train PointNet 
+$ python train.py -g 0 --method=point_seg
+
+# use gpu with id 0, train KDNet 
+$ python train.py -g 0 --method=kdnet_seg --dropout_ratio=0 --use_bn=1
+$ python train.py -g 0 --method=kdnet_seg --dropout_ratio=0.3 --use_bn=1 --out=results/kdnet
+```
 
 ### ScanNet
 

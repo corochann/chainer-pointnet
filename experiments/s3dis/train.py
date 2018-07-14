@@ -10,12 +10,17 @@ from chainer import serializers
 from chainer import iterators
 from chainer import optimizers
 from chainer import training
+from chainer.dataset import to_device, concat_examples
+from chainer.datasets import TransformDataset
 from chainer.training import extensions as E
 
+from chainer_pointnet.models.kdnet.kdnet_seg import KDNetSeg
 from chainer_pointnet.models.pointnet.pointnet_seg import PointNetSeg
 from chainer_pointnet.models.pointnet2.pointnet2_seg_ssg import PointNet2SegSSG
 
 from s3dis_dataset import get_dataset
+
+from chainer_pointnet.utils.kdtree import calc_max_level, TransformKDTreeSeg
 
 
 def main():
@@ -37,18 +42,43 @@ def main():
     args = parser.parse_args()
 
     seed = args.seed
+    out_dir = args.out
+    method = args.method
+    num_point = args.num_point
+
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+        import chainerex.utils as cl
+        fp = os.path.join(out_dir, 'args.json')
+        cl.save_json(fp, vars(args))
+        print('save args to', fp)
+    except ImportError:
+        pass
+
     # S3DIS dataset has 13 labels
     num_class = 13
     in_dim = 9
 
     # Dataset preparation
-    train, val = get_dataset(num_point=args.num_point)
+    train, val = get_dataset(num_point=num_point)
+    if method == 'kdnet_seg':
+        from chainer.datasets import TransformDataset
+        from chainer_pointnet.utils.kdtree import TransformKDTreeSeg, \
+            calc_max_level
+        max_level = calc_max_level(num_point)
+        print('kdnet max_level {}'.format(max_level))
+        train = TransformDataset(train, TransformKDTreeSeg(max_level=max_level))
+        val = TransformDataset(val, TransformKDTreeSeg(max_level=max_level))
+        points, split_dims, t = train[0]
+        print('converted to kdtree dataset train', points.shape, split_dims.shape, t.shape)
+        points, split_dims, t = val[0]
+        print('converted to kdtree dataset val', points.shape, split_dims.shape, t.shape)
 
     # Network
-    method = args.method
     trans = args.trans
     use_bn = args.use_bn
     dropout_ratio = args.dropout_ratio
+    converter = concat_examples
     if method == 'point_seg':
         print('Train PointNetSeg model... trans={} use_bn={} dropout={}'
               .format(trans, use_bn, dropout_ratio))
@@ -61,6 +91,27 @@ def main():
         model = PointNet2SegSSG(
             out_dim=num_class, in_dim=in_dim,
             dropout_ratio=dropout_ratio, use_bn=use_bn)
+    elif method == 'kdnet_seg':
+        print('Train KDNetSeg model... use_bn={} dropout={}'
+              .format(use_bn, dropout_ratio))
+        model = KDNetSeg(
+            out_dim=num_class, in_dim=in_dim,
+            dropout_ratio=dropout_ratio, use_bn=use_bn, max_level=max_level)
+
+        def kdnet_converter(batch, device=None, padding=None):
+            # concat_examples to CPU at first.
+            result = concat_examples(batch, device=None, padding=padding)
+            out_list = []
+            for elem in result:
+                if elem.dtype != object:
+                    # Send to GPU for int/float dtype array.
+                    out_list.append(to_device(device, elem))
+                else:
+                    # Do NOT send to GPU for dtype=object array.
+                    out_list.append(elem)
+            return tuple(out_list)
+
+        converter = kdnet_converter
     else:
         raise ValueError('[ERROR] Invalid method {}'.format(method))
 
@@ -82,7 +133,8 @@ def main():
     optimizer = optimizers.Adam()
     optimizer.setup(classifier)
 
-    updater = training.StandardUpdater(train_iter, optimizer, device=args.gpu)
+    updater = training.StandardUpdater(
+        train_iter, optimizer, device=args.gpu, converter=converter)
 
     trainer = training.Trainer(updater, (args.epoch, 'epoch'), out=args.out)
 
@@ -97,7 +149,8 @@ def main():
         [10, 20, 100, 150, 200, 230],
         [0.003, 0.001, 0.0003, 0.0001, 0.00003, 0.00001]))
 
-    trainer.extend(E.Evaluator(val_iter, classifier, device=args.gpu,))
+    trainer.extend(E.Evaluator(
+        val_iter, classifier, device=args.gpu, converter=converter))
     trainer.extend(E.snapshot(), trigger=(args.epoch, 'epoch'))
     trainer.extend(E.LogReport())
     trainer.extend(E.PrintReport(

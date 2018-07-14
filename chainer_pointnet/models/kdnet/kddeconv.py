@@ -55,8 +55,6 @@ class KDDeconv(chainer.Chain):
         """
         assert x.ndim == 4
         assert x_skip.ndim == 4
-        print('x', x.shape)
-        print('x_skip', x_skip.shape)
         assert x.shape[2] == split_dim.shape[1],\
             'x.shape {}, split_dim.shape{}'.format(x.shape, split_dim.shape)
         # x: (batch_size, ch, num_point, 1)
@@ -104,9 +102,9 @@ if __name__ == '__main__':
     point_set = numpy.random.rand(num_point, dim).astype(numpy.float32)
     point_set2 = numpy.random.rand(num_point, dim).astype(numpy.float32)
     print('point_set', point_set.shape)
-    points, split_dims, kdtree, split_positions = construct_kdtree_data(
+    points, split_dims, inds, kdtree, split_positions = construct_kdtree_data(
         point_set, max_level=7, calc_split_positions=True)
-    points2, split_dims2, kdtree2, split_positions2 = construct_kdtree_data(
+    points2, split_dims2, inds2, kdtree2, split_positions2 = construct_kdtree_data(
         point_set2, max_level=7, calc_split_positions=True)
     print('points', points.shape)  # 128 point here!
     # --- net definition ---

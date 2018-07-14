@@ -1,7 +1,6 @@
 import os
 
 import chainer
-from chainer.datasets import TransformDataset
 from chainer.datasets.concatenated_dataset import ConcatenatedDataset
 import numpy as np
 
@@ -85,6 +84,7 @@ if __name__ == '__main__':
 
     convert_to_kdtree = True
     if convert_to_kdtree:
+        from chainer.datasets import TransformDataset
         from chainer_pointnet.utils.kdtree import TransformKDTreeCls
         train = TransformDataset(train, TransformKDTreeCls())
         points, split_dims, t = train[1]

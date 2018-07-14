@@ -51,7 +51,7 @@ def main():
     num_class = 40
     debug = False
     try:
-        # os.makedirs(out_dir, exist_ok=True)
+        os.makedirs(out_dir, exist_ok=True)
         import chainerex.utils as cl
         fp = os.path.join(out_dir, 'args.json')
         cl.save_json(fp, vars(args))

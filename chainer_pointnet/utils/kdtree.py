@@ -92,6 +92,8 @@ def construct_kdtree_data(points, max_level=-1, calc_split_positions=False):
             Its order is updated according to `KDTree.indices`.
         split_dims (numpy.ndarray): list of int array. `split_dims[i]` will
             store `i`-th level `split_dim`.
+        inds (numpy.ndarray or slice): 1d array or slice to represent how the
+            `new_points` are constructed from input `points`.
         kdtree (scipy.spatial.ckdtree.cKDTree): KDTree instance
         split_positions (numpy.ndarray): list of float array.
             `split_positions[i]` will store `i`-th level `split`.
@@ -112,11 +114,13 @@ def construct_kdtree_data(points, max_level=-1, calc_split_positions=False):
               .format(target_size, remainder))
         # select remainder randomly
         inds = numpy.random.choice(range(num_point), remainder)
-        points = numpy.concatenate([points, points[inds]], axis=0)
+        inds = numpy.concatenate([numpy.arange(len(points)), inds], axis=0)
     elif target_size < num_point:
         # Reduce number of points
         inds = numpy.random.permutation(num_point)[:target_size]
-        points = points[inds]
+    else:
+        inds = slice(None)
+    points = points[inds]
     assert points.shape[0] == target_size
     kdtree = scipy.spatial.cKDTree(points, leafsize=1, balanced_tree=True)
     tree = kdtree.tree
@@ -134,7 +138,7 @@ def construct_kdtree_data(points, max_level=-1, calc_split_positions=False):
         # convert list to numpy array with object type.
         split_positions = numpy.array(
             [numpy.array(elem) for elem in split_positions])
-    return points[tree.indices], split_dims, kdtree, split_positions
+    return points[tree.indices], split_dims, inds, kdtree, split_positions
 
 
 class TransformKDTreeCls(object):
@@ -147,11 +151,30 @@ class TransformKDTreeCls(object):
         original_points, label = in_data
         # print('original_points', original_points.shape, 'label', label)
         pts = numpy.transpose(original_points[:, :, 0], (1, 0))
-        points, split_dims, kdtree, split_positions = construct_kdtree_data(
+        points, split_dims, inds, kdtree, split_positions = construct_kdtree_data(
             pts, max_level=self.max_level,
             calc_split_positions=False)
         points = numpy.transpose(points, (1, 0))[:, :, None]
         return points, split_dims, label
+
+
+class TransformKDTreeSeg(object):
+
+    def __init__(self, max_level=10):
+        super(TransformKDTreeSeg, self).__init__()
+        self.max_level = max_level
+
+    def __call__(self, in_data):
+        # shape points (cdim, num_point, 1), label (num_point,)
+        original_points, label_points = in_data
+        # print('original_points', original_points.shape, 'label', label)
+        pts = numpy.transpose(original_points[:, :, 0], (1, 0))
+        points, split_dims, inds, kdtree, split_positions = construct_kdtree_data(
+            pts, max_level=self.max_level,
+            calc_split_positions=False)
+        points = numpy.transpose(points, (1, 0))[:, :, None]
+        label_points = label_points[inds]
+        return points, split_dims, label_points
 
 
 if __name__ == '__main__':
@@ -161,9 +184,10 @@ if __name__ == '__main__':
     dim = 3
     point_set = numpy.random.rand(num_point, dim)
     print('point_set', point_set.shape)
-    points, split_dims, kdtree, split_positions = construct_kdtree_data(
+    points, split_dims, inds, kdtree, split_positions = construct_kdtree_data(
         point_set, max_level=max_level, calc_split_positions=True)
     print('kdtree', kdtree.indices)
+    print('inds', inds)
     # print('kdtree.tree', kdtree.tree.indices)  # same with kdtree.indices
     print('points', points.shape)  # 128 point here!
     print(points[0:2])

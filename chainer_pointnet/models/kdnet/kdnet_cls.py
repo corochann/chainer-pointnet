@@ -80,7 +80,7 @@ if __name__ == '__main__':
     dim = 3
     point_set = numpy.random.rand(num_point, dim).astype(numpy.float32)
     print('point_set', point_set.shape)
-    points, split_dims, kdtree, split_positions = construct_kdtree_data(
+    points, split_dims, inds, kdtree, split_positions = construct_kdtree_data(
         point_set, max_level=7, calc_split_positions=True)
     print('points', points.shape)  # 128 point here!
     # kdconv = KDConv(3, 8)
