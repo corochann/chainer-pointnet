@@ -59,24 +59,25 @@ class KDNetSeg(chainer.Chain):
 
     def calc(self, x, split_dims):
         bs = len(split_dims)
+        # construct split_dim_list
+        split_dim_list = []
+        for level in range(self.max_level):
+            split_dim_list.append(self.xp.array(
+                [split_dims[i, level] for i in range(bs)]))
+
         h = x
         h_list = [h]
         for d, kdconv in enumerate(self.kdconvs):
             level = self.max_level - d - 1
-            split_dim = self.xp.array(
-                [split_dims[i, level] for i in range(bs)])
-            h = kdconv(h, split_dim)
+            h = kdconv(h, split_dim_list[level])
             h_list.append(h)
 
         h_list.pop(-1)  # don't use last h as skip connection.
         for d, kddeconv in enumerate(self.kddeconvs):
             level = d
-            # TODO: use cache
-            split_dim = self.xp.array(
-                [split_dims[i, level] for i in range(bs)])
             h_skip = h_list.pop(-1)
             # print('h h_skip', h.shape, h_skip.shape, level, len(h_list))
-            h = kddeconv(h, split_dim, h_skip)
+            h = kddeconv(h, split_dim_list[level], h_skip)
         assert len(h_list) == 0
 
         if self.dropout_ratio > 0.:
