@@ -22,7 +22,7 @@ class KDNetCls(chainer.Chain):
             cdim (int): coordinate dimension in KDTree, usually 3 (x, y, z).
     """
 
-    def __init__(self, out_dim, in_dim=3, max_level=10, dropout_ratio=0.0,
+    def __init__(self, out_dim, in_dim=3, max_level=10, dropout_ratio=-1,
                  use_bn=True, compute_accuracy=True, cdim=3):
         super(KDNetCls, self).__init__()
         if max_level <= 10:
@@ -48,6 +48,19 @@ class KDNetCls(chainer.Chain):
         self.dropout_ratio = dropout_ratio
 
     def calc(self, x, split_dims):
+        """Main forward computation
+
+        Args:
+            x (array or Variable): 4-dim array (minibatch, K, N, 1).
+                `K` is channel, `N` is number of points.
+            split_dims (numpy.ndarray): 2-d array (minibatch, max_level) with
+                dtype=object. `split_dims[i, level]` is another array,
+                 represents `i`-th example's `level` level split dimension axis
+
+        Returns: 2-dim array (minibatch, out_ch), corresponds to the
+            probability score of each label.
+
+        """
         bs = len(split_dims)
         h = x
         for d, kdconv in enumerate(self.kdconvs):
@@ -55,11 +68,24 @@ class KDNetCls(chainer.Chain):
             split_dim = self.xp.array(
                 [split_dims[i, level] for i in range(bs)])
             h = kdconv(h, split_dim)
-        if self.dropout_ratio > 0.:
+        if self.dropout_ratio >= 0.:
             h = functions.dropout(h, self.dropout_ratio)
         return self.linear(h)
 
     def __call__(self, x, split_dims, t):
+        """calculate loss, accuracy
+
+        Args:
+            x (array or Variable): 4-dim array (minibatch, K, N, 1).
+                `K` is channel, `N` is number of points.
+            split_dims (numpy.ndarray): 2-d array (minibatch, max_level) with
+                dtype=object. `split_dims[i, level]` is another array,
+                 represents `i`-th example's `level` level split dimension axis
+            t (array or Variable): label
+
+        Returns (Variable): loss
+
+        """
         h = self.calc(x, split_dims)
         cls_loss = functions.softmax_cross_entropy(h, t)
         loss = cls_loss
