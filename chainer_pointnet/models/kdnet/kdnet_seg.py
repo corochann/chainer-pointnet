@@ -40,7 +40,12 @@ class KDNetSeg(chainer.Chain):
                                       .format(max_level))
         ch_list = ch_list[:max_level + 1]
         out_ch_list = ch_list.copy()
-        out_ch_list[0] = 16
+        # out_ch_list[0] = 16
+        for i in range(5):
+            # TODO: What kind of channels are best for decoding part?
+            # HACKING
+            # overwrites bottom layer to have wider channels
+            out_ch_list[i] = 64
         with self.init_scope():
             self.kdconvs = chainer.ChainList(
                 *[KDConv(ch_list[i], ch_list[i+1], use_bn=use_bn, cdim=cdim)
@@ -66,19 +71,19 @@ class KDNetSeg(chainer.Chain):
                 [split_dims[i, level] for i in range(bs)]))
 
         h = x
-        h_list = [h]
+        h_skip_list = [h]
         for d, kdconv in enumerate(self.kdconvs):
             level = self.max_level - d - 1
             h = kdconv(h, split_dim_list[level])
-            h_list.append(h)
+            h_skip_list.append(h)
 
-        h_list.pop(-1)  # don't use last h as skip connection.
+        h_skip_list.pop(-1)  # don't use last h as skip connection.
         for d, kddeconv in enumerate(self.kddeconvs):
             level = d
-            h_skip = h_list.pop(-1)
+            h_skip = h_skip_list.pop(-1)
             # print('h h_skip', h.shape, h_skip.shape, level, len(h_list))
             h = kddeconv(h, split_dim_list[level], h_skip)
-        assert len(h_list) == 0
+        assert len(h_skip_list) == 0
 
         if self.dropout_ratio > 0.:
             h = functions.dropout(h, self.dropout_ratio)

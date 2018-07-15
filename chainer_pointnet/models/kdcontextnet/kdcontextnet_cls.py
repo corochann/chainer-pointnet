@@ -1,5 +1,6 @@
-import chainer
 import numpy
+
+import chainer
 from chainer import functions
 from chainer import links
 from chainer import reporter
@@ -63,7 +64,8 @@ class KDContextNetCls(chainer.Chain):
                 *[KDContextConvBlock(
                     in_channels_list[i], m=2 ** levels_diff[i],
                     feature_learning_mlp=feature_learning_mlp_list[i],
-                    feature_aggregation_mlp=feature_aggregation_mlp_list[i]
+                    feature_aggregation_mlp=feature_aggregation_mlp_list[i],
+                    use_bn=use_bn
                 ) for i in range(len(levels_diff))])
             self.fc_blocks = chainer.ChainList(
                 *[LinearBlock(
@@ -101,7 +103,6 @@ class KDContextNetCls(chainer.Chain):
 
 
 if __name__ == '__main__':
-    import numpy
     from chainer_pointnet.utils.kdtree import construct_kdtree_data
 
     batchsize = 1

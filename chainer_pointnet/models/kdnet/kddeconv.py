@@ -8,13 +8,28 @@ class KDDeconv(chainer.Chain):
 
     Escape from Cells: Deep Kd-Networks for the Recognition of
     3D Point Cloud Models.
+
+    Args:
+        in_channels (int or None): channel size for input `x`
+        out_channels (int or None): output channels size
+        in_channels_skip (int or None): channel size for input `x_skip`
+        ksize (int or tuple): kernel size
+        stride (int or tuple): stride size
+        pad (int or tuple): padding size
+        nobias (bool): use bias `b` or not.
+        initialW: initiallizer of `W`
+        initial_bias: initializer of `b`
+        use_bn (bool): use batch normalization or not
+        activation (callable): activation function
+        dropout_ratio (float): dropout ratio, set negative value to skip
+            dropout
+        cdim (int): coordinate dimension, usually 3 (x, y, z).
     """
 
     def __init__(self, in_channels, out_channels, in_channels_skip=None,
                  ksize=1, stride=1, pad=0,
                  nobias=False, initialW=None, initial_bias=None, use_bn=True,
-                 activation=functions.relu, cdim=3):
-        # cdim: coordinate dimension, usually 3 (x, y, z).
+                 activation=functions.relu, dropout_ratio=-1, cdim=3):
         super(KDDeconv, self).__init__()
         out_ch = out_channels // 2
         out_channels_skip = out_channels - out_ch
@@ -34,6 +49,7 @@ class KDDeconv(chainer.Chain):
         self.cdim = cdim
         self.activation = activation
         self.use_bn = use_bn
+        self.dropout_ratio = dropout_ratio
 
     def __call__(self, x, split_dim, x_skip):
         """KDDeconv makes feature of 1-level children node of KDTree.
@@ -87,6 +103,8 @@ class KDDeconv(chainer.Chain):
             h = self.bn(h)
         if self.activation is not None:
             h = self.activation(h)
+        if self.dropout_ratio >= 0:
+            h = functions.dropout(h, ratio=self.dropout_ratio)
         return h
 
 

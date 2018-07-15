@@ -144,7 +144,10 @@ def main():
         model = KDContextNetCls(
             out_dim=num_class, in_dim=3,
             dropout_ratio=dropout_ratio, use_bn=use_bn,
-            levels=[3, 6, 9]
+            levels=[3, 6, 9],
+            feature_learning_mlp_list=[
+                [32, 32, 128], [64, 64, 256], [128, 128, 512]],
+            feature_aggregation_mlp_list=[[128], [256], [512]]
         )
         # levels=[3, 6, 9]
     else:

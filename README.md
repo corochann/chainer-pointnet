@@ -3,7 +3,7 @@
 Various point cloud based deep neural network implementation by 
 [Chainer](https://github.com/chainer/chainer) [1].
 
-It includes PointNet, PointNet++ and Kd-Network.
+It includes PointNet, PointNet++, Kd-Network and Kd context net (3DContextNet).
 
 ## Installation
 
@@ -74,10 +74,7 @@ Original implementation (in tensorflow) can be found on github under MIT license
 
 Implementations are in `models/kdnet`
 
-<!---
-TODO:
 Both classification and segmentation network are implemented.
--->
 
 [Original implementation](https://github.com/Regenerator/kdnets) 
 constructs KDTree by their own implementation, 
@@ -94,6 +91,19 @@ Original implementation (in tensorflow) can be found on github under MIT license
 Also, pytorch implementations can be found on github
 
  - [fxia22/kdnet.pytorch](https://github.com/fxia22/kdnet.pytorch)
+
+### Kd Context Network (3DContextNet) [7]
+
+Originally called 3DContextNet, but I named `KDContextNet` in my python program.
+
+Implementations are in `models/kdcontextnet`
+
+Both classification and segmentation network are implemented.
+
+I could not find the implementation so far, and this is "inferred" 
+implementation. 
+Especially for segmentation part, how to "upsample" is not written in detail.
+So this implementation might be different from author's implementation.
 
 ## Experiments
 
@@ -129,8 +139,8 @@ $ python train.py -g 0 --method=kdcontextnet_cls --dropout_ratio=0.3 --use_bn=1 
 python train.py -g 0 --method=kdcontextnet_cls --dropout_ratio=0.3 --use_bn=1 --out=results/kdcontextnet_level369
 ```
 
-```bash
---use_bn=1 --dropout_ratio=0.3
+```text
+python train.py --use_bn=1 --dropout_ratio=0.3
 # PointNetVanilla
 epoch       main/loss   main/cls_loss  main/trans_loss1  main/trans_loss2  main/accuracy  validation/main/loss  validation/main/accuracy  lr          elapsed_time
 250         0.111644    0.111644                                           0.958367       0.606223              0.872596                  1e-05       3560.81
@@ -197,6 +207,16 @@ $ python train.py -g 0 --method=point2_seg_ssg --out=results/pointnet2
 # use gpu with id 0, train KDNet 
 $ python train.py -g 0 --method=kdnet_seg --dropout_ratio=0 --use_bn=1
 $ python train.py -g 0 --method=kdnet_seg --dropout_ratio=0.3 --use_bn=1 --out=results/kdnet
+
+# use gpu with id 0, train KDContextNet 
+$ python train.py -g 0 --method=kdcontextnet_seg --dropout_ratio=0.3 --use_bn=1 --out=results/kdcontextnet
+```
+
+```text
+python train.py --use_bn=1 --dropout_ratio=0.3
+# PointNetVanilla
+epoch       main/loss   main/cls_loss  main/trans_loss1  main/trans_loss2  main/accuracy  validation/main/loss  validation/main/accuracy  lr          elapsed_time
+250         0.0305516   0.0305516                                          0.988418       0.690604              0.891049                  1e-05       101405
 ```
 
 ### ScanNet
@@ -265,4 +285,9 @@ Joint 2D-3D-Semantic Data for Indoor Scene Understanding.
  - [paper on arXiv](https://arxiv.org/abs/1702.01105)
  - [project page](http://buildingparser.stanford.edu/dataset.html)
 
+[7] Wei, Zeng and Theo, Gevers. 
+3DContextNet: K-d Tree Guided Hierarchical Learning of Point Clouds Using Local and Global Contextual Cues. 
+*arXiv preprint arXiv:1711.11379* 2017.
+
+ - [paper on arXiv](https://arxiv.org/abs/1711.11379)
 

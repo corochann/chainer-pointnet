@@ -27,6 +27,9 @@ class KDContextConvBlock(chainer.Chain):
         activation (callable): activation function
         dropout_ratio (float): dropout ratio, set negative value to skip
             dropout
+        aggregation (bool): apply aggregation or not.
+            Default is `True`, `num_point` will be `num_point//m` in output.
+            `False` is set for deconvolution part, not reduce number of points.
     """
 
     def __init__(self, in_channels, m,
@@ -34,7 +37,8 @@ class KDContextConvBlock(chainer.Chain):
                  feature_aggregation_mlp=None,
                  ksize=1, stride=1, pad=0,
                  nobias=False, initialW=None, initial_bias=None, use_bn=True,
-                 activation=functions.relu, dropout_ratio=-1):
+                 activation=functions.relu, dropout_ratio=-1,
+                 aggregation=True):
         super(KDContextConvBlock, self).__init__()
         if feature_learning_mlp is None:
             print('feature_learning_mlp is None, value set automatically')
@@ -65,6 +69,7 @@ class KDContextConvBlock(chainer.Chain):
                             activation=activation, dropout_ratio=dropout_ratio,
                             ) for i in range(len(famlp)-1)])
         self.m = m
+        self.aggregation = aggregation
 
     def __call__(self, x):
         """Main forward computation
@@ -78,6 +83,7 @@ class KDContextConvBlock(chainer.Chain):
             `N` is number of input points.
             Number of output points are reduced to `N//m` after feature
             aggregation.
+            If `aggregation=False`, then output shape is (minibatch, K', N, 1)
 
         """
         assert x.ndim == 4  # (bs, ch, N, 1)
@@ -126,8 +132,9 @@ class KDContextConvBlock(chainer.Chain):
         del h_local, h_global
         for conv in self.faconvs:
             h = conv(h)
-        # TODO: support other symmetric function
-        h = functions.max_pooling_2d(h, ksize=(self.m, 1))
+        if self.aggregation:
+            # TODO: support other symmetric function
+            h = functions.max_pooling_2d(h, ksize=(self.m, 1))
         return h
 
 
