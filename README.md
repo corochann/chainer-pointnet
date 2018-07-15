@@ -112,10 +112,14 @@ You can simply execute train code to train `PointNet` or `PointNetVanilla`.
 
 ```angular2html
 # use gpu with id 0, train PointNetVanilla
-$ python train.py -g 0 --trans=false
+$ python train.py -g 0 --trans=false --method=point_cls --out=results/point_vanilla
 
 # use gpu with id 0, train PointNet 
-$ python train.py -g 0
+$ python train.py -g 0 --method=point_cls --out=results/point
+
+# use gpu with id 0, train PointNet++ 
+$ python train.py -g 0 --method=point2_cls_ssg --out=results/point2_ssg
+$ python train.py -g 0 --method=point2_cls_msg --out=results/point2_msg
 
 # use gpu with id 0, train KDNet 
 $ python train.py -g 0 --method=kdnet_cls --dropout_ratio=0 --use_bn=1
@@ -162,10 +166,13 @@ $ python gen_indoor3d_h5.py
 
 ```bash
 # use gpu with id 0, train PointNetVanilla
-$ python train.py -g 0 --method=point_seg --trans=false
+$ python train.py -g 0 --method=point_seg --trans=false --out=results/pointnet_vanilla
 
 # use gpu with id 0, train PointNet 
-$ python train.py -g 0 --method=point_seg
+$ python train.py -g 0 --method=point_seg --out=results/pointnet
+
+# use gpu with id 0, train PointNet++
+$ python train.py -g 0 --method=point2_seg_ssg --out=results/pointnet2
 
 # use gpu with id 0, train KDNet 
 $ python train.py -g 0 --method=kdnet_seg --dropout_ratio=0 --use_bn=1
