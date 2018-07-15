@@ -15,7 +15,8 @@ class KDNetCls(chainer.Chain):
 
         Args:
             out_dim (int): output dimension, number of class for classification
-            in_dim: input dimension for each point. default is 3, (x, y, z).
+            in_dim (int or None): input dimension for each point.
+                default is 3, (x, y, z).
             dropout_ratio (float): dropout ratio
             use_bn (bool): use batch normalization or not.
             compute_accuracy (bool): compute & report accuracy or not

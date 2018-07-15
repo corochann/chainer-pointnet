@@ -14,6 +14,8 @@ from chainer.dataset import to_device
 from chainer.datasets import TransformDataset, SubDataset
 from chainer.training import extensions as E
 
+from chainer_pointnet.models.kdcontextnet.kdcontextnet_cls import \
+    KDContextNetCls
 from chainer_pointnet.models.kdnet.kdnet_cls import KDNetCls
 from chainer_pointnet.models.pointnet.pointnet_cls import PointNetCls
 from chainer_pointnet.models.pointnet2.pointnet2_cls_msg import PointNet2ClsMSG
@@ -62,16 +64,27 @@ def main():
     # Dataset preparation
     train = get_train_dataset(num_point=num_point)
     val = get_test_dataset(num_point=num_point)
-    if method == 'kdnet_cls':
+    if method == 'kdnet_cls' or method == 'kdcontextnet_cls':
         from chainer_pointnet.utils.kdtree import TransformKDTreeCls
         max_level = calc_max_level(num_point)
         print('kdnet_cls max_level {}'.format(max_level))
-        train = TransformDataset(train, TransformKDTreeCls(max_level=max_level))
-        val = TransformDataset(val, TransformKDTreeCls(max_level=max_level))
-        points, split_dims, t = train[0]
-        print('converted to kdtree dataset train', points.shape, split_dims.shape, t)
-        points, split_dims, t = val[0]
-        print('converted to kdtree dataset val', points.shape, split_dims.shape, t)
+        return_split_dims = (method == 'kdnet_cls')
+        train = TransformDataset(train, TransformKDTreeCls(
+            max_level=max_level, return_split_dims=return_split_dims))
+        val = TransformDataset(val, TransformKDTreeCls(
+            max_level=max_level, return_split_dims=return_split_dims))
+        if method == 'kdnet_cls':
+            # Debug print
+            points, split_dims, t = train[0]
+            print('converted to kdnet dataset train', points.shape, split_dims.shape, t)
+            points, split_dims, t = val[0]
+            print('converted to kdnet dataset val', points.shape, split_dims.shape, t)
+        if method == 'kdcontextnet_cls':
+            # Debug print
+            points, t = train[0]
+            print('converted to kdcontextnet dataset train', points.shape, t)
+            points, t = val[0]
+            print('converted to kdcontextnet dataset val', points.shape, t)
 
     if debug:
         # use few train dataset
@@ -105,7 +118,7 @@ def main():
             out_dim=num_class, in_dim=3,
             dropout_ratio=dropout_ratio, use_bn=use_bn)
     elif method == 'kdnet_cls':
-        print('Train KdNetCls model... use_bn={} dropout={}'
+        print('Train KDNetCls model... use_bn={} dropout={}'
               .format(use_bn, dropout_ratio))
         model = KDNetCls(
             out_dim=num_class, in_dim=3,
@@ -125,6 +138,15 @@ def main():
             return tuple(out_list)
 
         converter = kdnet_converter
+    elif method == 'kdcontextnet_cls':
+        print('Train KDContextNetCls model... use_bn={} dropout={}'
+              .format(use_bn, dropout_ratio))
+        model = KDContextNetCls(
+            out_dim=num_class, in_dim=3,
+            dropout_ratio=dropout_ratio, use_bn=use_bn,
+            levels=[3, 6, 9]
+        )
+        # levels=[3, 6, 9]
     else:
         raise ValueError('[ERROR] Invalid method {}'.format(method))
 

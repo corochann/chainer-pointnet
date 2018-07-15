@@ -144,9 +144,10 @@ def construct_kdtree_data(points, max_level=-1, calc_split_positions=False):
 
 class TransformKDTreeCls(object):
 
-    def __init__(self, max_level=10):
+    def __init__(self, max_level=10, return_split_dims=True):
         super(TransformKDTreeCls, self).__init__()
         self.max_level = max_level
+        self.return_split_dims = return_split_dims
 
     def __call__(self, in_data):
         original_points, label = in_data
@@ -156,14 +157,21 @@ class TransformKDTreeCls(object):
             pts, max_level=self.max_level,
             calc_split_positions=False)
         points = numpy.transpose(points, (1, 0))[:, :, None]
-        return points, split_dims, label
+        if self.return_split_dims:
+            # Used in `kdnet_cls`, which needs `split_dims` information.
+            return points, split_dims, label
+        else:
+            # Used in `kdcontextnet_cls`, which only needs permutated points,
+            # but not `split_dims`.
+            return points, label
 
 
 class TransformKDTreeSeg(object):
 
-    def __init__(self, max_level=10):
+    def __init__(self, max_level=10, return_split_dims=True):
         super(TransformKDTreeSeg, self).__init__()
         self.max_level = max_level
+        self.return_split_dims = return_split_dims
 
     def __call__(self, in_data):
         # shape points (cdim, num_point, 1), label (num_point,)
@@ -175,7 +183,13 @@ class TransformKDTreeSeg(object):
             calc_split_positions=False)
         points = numpy.transpose(points, (1, 0))[:, :, None]
         label_points = label_points[inds]
-        return points, split_dims, label_points
+        if self.return_split_dims:
+            # Used in `kdnet_cls`, which needs `split_dims` information.
+            return points, split_dims, label_points
+        else:
+            # Used in `kdcontextnet_cls`, which only needs permutated points,
+            # but not `split_dims`.
+            return points, label_points
 
 
 if __name__ == '__main__':

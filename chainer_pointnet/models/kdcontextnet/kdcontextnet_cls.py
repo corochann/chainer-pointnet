@@ -11,16 +11,49 @@ from chainer_pointnet.models.linear_block import LinearBlock
 
 class KDContextNetCls(chainer.Chain):
 
+    """Classification 3DContextNet
+
+    Args:
+        out_dim (int): output dimension, number of class for classification
+        in_dim (int or None): input dimension for each point.
+            default is 3, (x, y, z).
+        dropout_ratio (float): dropout ratio
+        use_bn (bool): use batch normalization or not.
+        compute_accuracy (bool): compute & report accuracy or not
+        levels (list): list of int. It determines block depth and each
+            block's grouping (receptive field) size.
+            For example if `list=[5, 6, 7]`, it will take
+            level1 block as 5-th depth (32) of KDTree,
+            level2 as 6-th depth (64), level3 as 7-th depth (128) resp.
+            Receptive field (number of points in each grouping) is
+            `2**level` for each level.
+        feature_learning_mlp_list (list): list of list of int.
+            Indicates each block's feature learning MLP size.
+        feature_aggregation_mlp_list (list): list of list of int.
+            Indicates each block's feature aggregation MLP size.
+        fc_mlp_list (list): list of int.
+            Indicates final fully connection MLP size.
+    """
+
     def __init__(self, out_dim, in_dim=3, dropout_ratio=0.5,
-                 use_bn=True, compute_accuracy=True):
+                 use_bn=True, compute_accuracy=True,
+                 levels=None,
+                 feature_learning_mlp_list=None,
+                 feature_aggregation_mlp_list=None,
+                 fc_mlp_list=None
+                 ):
         super(KDContextNetCls, self).__init__()
-        levels = [5, 6, 7]
-        levels_diff = numpy.diff(numpy.array([0] + levels))
-        feature_learning_mlp_list = [
+        levels = levels or [5, 6, 7]
+        feature_learning_mlp_list = feature_learning_mlp_list or [
             [64, 64, 128, 128], [64, 64, 256, 256], [64, 64, 512, 512]]
-        feature_aggregation_mlp_list = [[256], [512], [1024]]
-        in_channels_list = [in_dim] + [elem[-1] for elem in feature_aggregation_mlp_list]
-        fc_mlp_list = [256, 256]
+        feature_aggregation_mlp_list = feature_aggregation_mlp_list or [
+            [256], [512], [1024]]
+        in_channels_list = [in_dim] + [elem[-1] for elem in
+                                       feature_aggregation_mlp_list]
+        fc_mlp_list = fc_mlp_list or [256, 256]
+
+        levels_diff = numpy.diff(numpy.array([0] + levels))
+        print('levels {}, levels_diff {}'.format(levels, levels_diff))
         fcmlps = [in_channels_list[-1]] + fc_mlp_list
         assert len(levels) == len(feature_learning_mlp_list)
         assert len(levels) == len(feature_aggregation_mlp_list)

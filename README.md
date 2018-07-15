@@ -122,8 +122,11 @@ $ python train.py -g 0 --method=point2_cls_ssg --out=results/point2_ssg
 $ python train.py -g 0 --method=point2_cls_msg --out=results/point2_msg
 
 # use gpu with id 0, train KDNet 
-$ python train.py -g 0 --method=kdnet_cls --dropout_ratio=0 --use_bn=1
 $ python train.py -g 0 --method=kdnet_cls --dropout_ratio=0.3 --use_bn=1 --out=results/kdnet
+
+# use gpu with id 0, train KDContextNet 
+$ python train.py -g 0 --method=kdcontextnet_cls --dropout_ratio=0.3 --use_bn=1 --out=results/kdcontextnet
+python train.py -g 0 --method=kdcontextnet_cls --dropout_ratio=0.3 --use_bn=1 --out=results/kdcontextnet_level369
 ```
 
 ```bash
