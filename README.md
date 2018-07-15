@@ -124,8 +124,25 @@ $ python train.py -g 0 --method=point2_cls_msg --out=results/point2_msg
 # use gpu with id 0, train KDNet 
 $ python train.py -g 0 --method=kdnet_cls --dropout_ratio=0 --use_bn=1
 $ python train.py -g 0 --method=kdnet_cls --dropout_ratio=0.3 --use_bn=1 --out=results/kdnet
-python train.py -g 0 --method=kdnet_cls --dropout_ratio=0.3 --use_bn=1 --out=results/kdnet_small
 ```
+
+```bash
+--use_bn=1 --dropout_ratio=0.3
+# PointNetVanilla
+epoch       main/loss   main/cls_loss  main/trans_loss1  main/trans_loss2  main/accuracy  validation/main/loss  validation/main/accuracy  lr          elapsed_time
+250         0.111644    0.111644                                           0.958367       0.606223              0.872596                  1e-05       3560.81
+# PointNet
+250         0.119699    0.117399       0.00227531        2.40329e-05       0.95684        0.587751              0.871795                  1e-05       10358
+# PointNet2 SSG
+
+# PointNet2 MSG
+
+# KDNet with bn & dropout_ratio=0.3
+250         0.10106                                                        0.962235       1.01367               0.820913                  1e-05       20324
+```
+
+KDNet seems "overfit" to the train data, meaning that its representation power is strong but it fails to generalize to test data.
+Maybe this is due to its property of non-rotational invariance.
 
 ### S3DIS [6]
 
