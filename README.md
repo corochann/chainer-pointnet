@@ -118,6 +118,9 @@ Download script & code is from [charlesq34/pointnet](https://github.com/charlesq
  - http://modelnet.cs.princeton.edu/
 
 The dataset is automatically downloaded and preprocessed. 
+Dataset shape is `train: (9840, 3, num_point=1024, 1), test (2468, 3, num_point=1024, 1)`.
+`ch=3`, meaning it only contains `(x, y, z)` coordinate information.
+
 You can simply execute train code to train `PointNet` or `PointNetVanilla`.
 
 ```angular2html
@@ -147,11 +150,13 @@ epoch       main/loss   main/cls_loss  main/trans_loss1  main/trans_loss2  main/
 # PointNet
 250         0.119699    0.117399       0.00227531        2.40329e-05       0.95684        0.587751              0.871795                  1e-05       10358
 # PointNet2 SSG
-
+250         0.0226786                                                      0.989821       0.631495              0.898638                  1e-05       54240.2
 # PointNet2 MSG
 
 # KDNet with bn & dropout_ratio=0.3
 250         0.10106                                                        0.962235       1.01367               0.820913                  1e-05       20324
+# KDContextNet with bn & dropout_ratio=0.3
+250         0.126861                                                       0.952769       0.835642              0.825321                  1e-05       31900.6
 ```
 
 KDNet seems "overfit" to the train data, meaning that its representation power is strong but it fails to generalize to test data.
@@ -166,6 +171,15 @@ Download the dataset from,
  
 Prerocessing code adopted from [charlesq34/pointnet](https://github.com/charlesq34/pointnet)
 under `third_party` directory.
+
+Dataset shape:
+```text
+train shape (20291, 9, 4096, 1) (20291, 4096)
+test  shape (3294, 9, 4096, 1) (3294, 4096)
+```
+`ch=9`, it contains `0-2 ch: XYZ, 3-5ch: RGB, 6-8 normalized XYZ` coordinate
+information respectively.
+
 
 Steps:
 
@@ -284,6 +298,7 @@ Joint 2D-3D-Semantic Data for Indoor Scene Understanding.
 
  - [paper on arXiv](https://arxiv.org/abs/1702.01105)
  - [project page](http://buildingparser.stanford.edu/dataset.html)
+ - [code: alexsax/2D-3D-Semantics](https://github.com/alexsax/2D-3D-Semantics)
 
 [7] Wei, Zeng and Theo, Gevers. 
 3DContextNet: K-d Tree Guided Hierarchical Learning of Point Clouds Using Local and Global Contextual Cues. 

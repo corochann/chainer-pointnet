@@ -14,6 +14,8 @@ from chainer.dataset import to_device, concat_examples
 from chainer.datasets import TransformDataset
 from chainer.training import extensions as E
 
+from chainer_pointnet.models.kdcontextnet.kdcontextnet_seg import \
+    KDContextNetSeg
 from chainer_pointnet.models.kdnet.kdnet_seg import KDNetSeg
 from chainer_pointnet.models.pointnet.pointnet_seg import PointNetSeg
 from chainer_pointnet.models.pointnet2.pointnet2_seg_ssg import PointNet2SegSSG
@@ -61,18 +63,28 @@ def main():
 
     # Dataset preparation
     train, val = get_dataset(num_point=num_point)
-    if method == 'kdnet_seg':
-        from chainer.datasets import TransformDataset
+    if method == 'kdnet_seg' or method == 'kdcontextnet_seg':
         from chainer_pointnet.utils.kdtree import TransformKDTreeSeg, \
             calc_max_level
         max_level = calc_max_level(num_point)
         print('kdnet max_level {}'.format(max_level))
-        train = TransformDataset(train, TransformKDTreeSeg(max_level=max_level))
-        val = TransformDataset(val, TransformKDTreeSeg(max_level=max_level))
-        points, split_dims, t = train[0]
-        print('converted to kdtree dataset train', points.shape, split_dims.shape, t.shape)
-        points, split_dims, t = val[0]
-        print('converted to kdtree dataset val', points.shape, split_dims.shape, t.shape)
+        return_split_dims = (method == 'kdnet_seg')
+        train = TransformDataset(train, TransformKDTreeSeg(
+            max_level=max_level, return_split_dims=return_split_dims))
+        val = TransformDataset(val, TransformKDTreeSeg(
+            max_level=max_level, return_split_dims=return_split_dims))
+        if method == 'kdnet_seg':
+            # Debug print
+            points, split_dims, t = train[0]
+            print('converted to kdnet dataset train', points.shape, split_dims.shape, t.shape)
+            points, split_dims, t = val[0]
+            print('converted to kdnet dataset val', points.shape, split_dims.shape, t.shape)
+        if method == 'kdcontextnet_seg':
+            # Debug print
+            points, t = train[0]
+            print('converted to kdcontextnet dataset train', points.shape, t.shape)
+            points, t = val[0]
+            print('converted to kdcontextnet dataset val', points.shape, t.shape)
 
     # Network
     trans = args.trans
@@ -112,6 +124,12 @@ def main():
             return tuple(out_list)
 
         converter = kdnet_converter
+    elif method == 'kdcontextnet_seg':
+        print('Train KDContextNetSeg model... use_bn={} dropout={}'
+              .format(use_bn, dropout_ratio))
+        model = KDContextNetSeg(
+            out_dim=num_class, in_dim=in_dim,
+            dropout_ratio=dropout_ratio, use_bn=use_bn)
     else:
         raise ValueError('[ERROR] Invalid method {}'.format(method))
 

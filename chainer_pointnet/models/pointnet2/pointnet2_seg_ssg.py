@@ -58,6 +58,8 @@ class PointNet2SegSSG(chainer.Chain):
         assert x.ndim == 4
         assert x.shape[-1] == 1
 
+        # TODO: consider support using only XYZ information like
+        # coord_points = functions.transpose(x[:, :3, :, 0], (0, 2, 1))
         coord_points = functions.transpose(x[:, :, :, 0], (0, 2, 1))
         # h: feature_points (bs, num_point, ch)
         h0 = None

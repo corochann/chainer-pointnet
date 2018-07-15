@@ -1,3 +1,5 @@
+import numpy
+
 import chainer
 from chainer import functions
 from chainer import links
@@ -8,7 +10,6 @@ from chainer_pointnet.models.kdcontextnet.kdcontextconv_block import \
     KDContextConvBlock
 from chainer_pointnet.models.kdcontextnet.kdcontextdeconv_block import \
     KDContextDeconvBlock
-from chainer_pointnet.models.linear_block import LinearBlock
 
 
 class KDContextNetSeg(chainer.Chain):
@@ -123,7 +124,7 @@ class KDContextNetSeg(chainer.Chain):
         if self.dropout_ratio > 0.:
             h = functions.dropout(h, self.dropout_ratio)
         h = self.conv(h)
-        return h
+        return h[:, :, :, 0]
 
     def __call__(self, x, t):
         h = self.calc(x)
@@ -138,7 +139,6 @@ class KDContextNetSeg(chainer.Chain):
 
 
 if __name__ == '__main__':
-    import numpy
     from chainer_pointnet.utils.kdtree import construct_kdtree_data
 
     batchsize = 1
