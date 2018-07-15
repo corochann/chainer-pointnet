@@ -115,12 +115,13 @@ def construct_kdtree_data(points, max_level=-1, calc_split_positions=False):
         # select remainder randomly
         inds = numpy.random.choice(range(num_point), remainder)
         inds = numpy.concatenate([numpy.arange(len(points)), inds], axis=0)
+        points = points[inds]
     elif target_size < num_point:
         # Reduce number of points
         inds = numpy.random.permutation(num_point)[:target_size]
+        points = points[inds]
     else:
-        inds = slice(None)
-    points = points[inds]
+        inds = numpy.arange(num_point)
     assert points.shape[0] == target_size
     kdtree = scipy.spatial.cKDTree(points, leafsize=1, balanced_tree=True)
     tree = kdtree.tree
@@ -138,7 +139,7 @@ def construct_kdtree_data(points, max_level=-1, calc_split_positions=False):
         # convert list to numpy array with object type.
         split_positions = numpy.array(
             [numpy.array(elem) for elem in split_positions])
-    return points[tree.indices], split_dims, inds, kdtree, split_positions
+    return points[tree.indices], split_dims, inds[tree.indices], kdtree, split_positions
 
 
 class TransformKDTreeCls(object):
@@ -199,7 +200,15 @@ if __name__ == '__main__':
         print('i {}, {} type {}'.format(i, split_positions[i],
                                         split_positions.dtype))
 
-
-
-
-
+    # test TransformKDTreeSeg
+    num_point = 50
+    perm = numpy.random.permutation(num_point)
+    pts = numpy.arange(num_point).astype(numpy.float32)[perm]
+    label = numpy.arange(num_point).astype(numpy.int32)[perm]
+    print('pts', pts.shape, pts[:5])
+    print('label', label.shape, label[:5])
+    pts = numpy.broadcast_to(pts[None, :], (3, num_point))[:, :, None]
+    t = TransformKDTreeSeg(max_level=calc_max_level(num_point))
+    out_pts, split_dims, out_labels = t((pts, label))
+    print('out_pts', out_pts.shape, out_pts[0, :10, 0])
+    print('out_labels', out_labels.shape, out_labels[:10])

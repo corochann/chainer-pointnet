@@ -28,7 +28,7 @@ def main():
         description='S3DIS segmentation')
     parser.add_argument('--method', '-m', type=str, default='point_seg')
     parser.add_argument('--batchsize', '-b', type=int, default=32)
-    parser.add_argument('--dropout_ratio', type=float, default=0.3)
+    parser.add_argument('--dropout_ratio', type=float, default=0.0)
     parser.add_argument('--num_point', type=int, default=4096)
     parser.add_argument('--gpu', '-g', type=int, default=-1)
     parser.add_argument('--out', '-o', type=str, default='result')
