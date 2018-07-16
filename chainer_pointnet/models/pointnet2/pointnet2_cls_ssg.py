@@ -40,11 +40,9 @@ class PointNet2ClsSSG(chainer.Chain):
                 mlp=[256, 512, 1024], mlp2=None, residual=residual)
 
             self.fc_block4 = LinearBlock(
-                1024, 512, use_bn=use_bn, dropout_ratio=dropout_ratio,
-                residual=residual)
+                1024, 512, use_bn=use_bn, dropout_ratio=dropout_ratio,)
             self.fc_block5 = LinearBlock(
-                512, 256, use_bn=use_bn, dropout_ratio=dropout_ratio,
-                residual=residual)
+                512, 256, use_bn=use_bn, dropout_ratio=dropout_ratio,)
             self.fc6 = links.Linear(256, out_dim)
 
         self.compute_accuracy = compute_accuracy

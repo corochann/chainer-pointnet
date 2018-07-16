@@ -120,7 +120,9 @@ class KDContextConvBlock(chainer.Chain):
         h2 = functions.max_pooling_2d(h2, ksize=(self.m, 1))[:, :, :, 0]
         h3 = functions.max_pooling_2d(h3, ksize=(self.m, 1))[:, :, :, 0]
         if self.normalize:
-            h2 = h2 * functions.rsqrt(functions.sum(h2 * h2, axis=1))
+            eps = 1e-3
+            h2 = h2 * functions.broadcast_to(functions.rsqrt(
+                functions.sum(h2 * h2, axis=1, keepdims=True) + eps), h2.shape)
 
         # g (bs, hw, hw), where hw=`n//self.m`
         g = functions.matmul(h2, h2, transa=True)
@@ -160,7 +162,8 @@ if __name__ == '__main__':
         point_set2, max_level=7, calc_split_positions=True)
     print('points', points.shape)  # 128 point here!
     kdconvblock = KDContextConvBlock(
-        3, m=2**3, feature_learning_mlp=[16], feature_aggregation_mlp=[24])
+        3, m=2**3, feature_learning_mlp=[16], feature_aggregation_mlp=[24],
+        normalize=True)
     # split_dim = numpy.array([split_dims[-1], split_dims2[-1]])
     # print('split_dim', split_dim.shape)
     pts = numpy.array([points, points2])

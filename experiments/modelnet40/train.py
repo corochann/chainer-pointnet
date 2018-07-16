@@ -108,25 +108,26 @@ def main():
               .format(trans, use_bn, dropout_ratio))
         model = PointNetCls(
             out_dim=num_class, in_dim=3, middle_dim=64, dropout_ratio=dropout_ratio,
-            trans=trans, trans_lam1=0.001, trans_lam2=0.001, use_bn=use_bn)
+            trans=trans, trans_lam1=0.001, trans_lam2=0.001, use_bn=use_bn,
+            residual=residual)
     elif method == 'point2_cls_ssg':
         print('Train PointNet2ClsSSG model... use_bn={} dropout={}'
               .format(use_bn, dropout_ratio))
         model = PointNet2ClsSSG(
             out_dim=num_class, in_dim=3,
-            dropout_ratio=dropout_ratio, use_bn=use_bn)
+            dropout_ratio=dropout_ratio, use_bn=use_bn, residual=residual)
     elif method == 'point2_cls_msg':
         print('Train PointNet2ClsMSG model... use_bn={} dropout={}'
               .format(use_bn, dropout_ratio))
         model = PointNet2ClsMSG(
             out_dim=num_class, in_dim=3,
-            dropout_ratio=dropout_ratio, use_bn=use_bn)
+            dropout_ratio=dropout_ratio, use_bn=use_bn, residual=residual)
     elif method == 'kdnet_cls':
         print('Train KDNetCls model... use_bn={} dropout={}'
               .format(use_bn, dropout_ratio))
         model = KDNetCls(
             out_dim=num_class, in_dim=3,
-            dropout_ratio=dropout_ratio, use_bn=use_bn, max_level=max_level)
+            dropout_ratio=dropout_ratio, use_bn=use_bn, max_level=max_level,)
 
         def kdnet_converter(batch, device=None, padding=None):
             # concat_examples to CPU at first.
@@ -154,7 +155,7 @@ def main():
             feature_learning_mlp_list=[
                 [32, 32, 128], [64, 64, 256], [128, 128, 512]],
             feature_aggregation_mlp_list=[[128], [256], [512]],
-            normalize=normalize
+            normalize=normalize, residual=residual
         )
     else:
         raise ValueError('[ERROR] Invalid method {}'.format(method))

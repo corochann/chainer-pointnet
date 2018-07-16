@@ -28,8 +28,7 @@ class LinearBlock(chainer.Chain):
         if self.activation is not None:
             h = self.activation(h)
         if self.residual:
-            from chainerex.functions import residual_add
-            h = residual_add(h, x)
+            raise NotImplementedError('not implemented yet')
         if self.dropout_ratio >= 0:
             h = functions.dropout(h, ratio=self.dropout_ratio)
         return h

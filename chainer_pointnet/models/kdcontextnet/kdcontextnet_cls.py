@@ -73,7 +73,7 @@ class KDContextNetCls(chainer.Chain):
             self.fc_blocks = chainer.ChainList(
                 *[LinearBlock(
                     fcmlps[i], fcmlps[i+1], use_bn=use_bn,
-                    dropout_ratio=dropout_ratio, residual=residual
+                    dropout_ratio=dropout_ratio
                 ) for i in range(len(fcmlps)-1)])
             self.linear = links.Linear(fcmlps[-1], out_dim)
         self.compute_accuracy = compute_accuracy

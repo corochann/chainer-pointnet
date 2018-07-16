@@ -71,11 +71,9 @@ class PointNetCls(chainer.Chain):
 
             # original impl. uses `keep_prob=0.7`.
             self.fc_block6 = LinearBlock(
-                1024, 512, use_bn=use_bn, dropout_ratio=dropout_ratio,
-                residual=residual)
+                1024, 512, use_bn=use_bn, dropout_ratio=dropout_ratio,)
             self.fc_block7 = LinearBlock(
-                512, 256, use_bn=use_bn, dropout_ratio=dropout_ratio,
-                residual=residual)
+                512, 256, use_bn=use_bn, dropout_ratio=dropout_ratio,)
             self.fc8 = links.Linear(256, out_dim)
 
         self.in_dim = in_dim

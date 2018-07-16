@@ -99,20 +99,23 @@ def main():
         print('Train PointNetSeg model... trans={} use_bn={} dropout={}'
               .format(trans, use_bn, dropout_ratio))
         model = PointNetSeg(
-            out_dim=num_class, in_dim=in_dim, middle_dim=64, dropout_ratio=dropout_ratio,
-            trans=trans, trans_lam1=0.001, trans_lam2=0.001, use_bn=use_bn)
+            out_dim=num_class, in_dim=in_dim, middle_dim=64,
+            dropout_ratio=dropout_ratio,
+            trans=trans, trans_lam1=0.001, trans_lam2=0.001, use_bn=use_bn,
+            residual=residual)
     elif method == 'point2_seg_ssg':
         print('Train PointNet2SegSSG model... use_bn={} dropout={}'
               .format(use_bn, dropout_ratio))
         model = PointNet2SegSSG(
             out_dim=num_class, in_dim=in_dim,
-            dropout_ratio=dropout_ratio, use_bn=use_bn)
+            dropout_ratio=dropout_ratio, use_bn=use_bn, residual=residual)
     elif method == 'kdnet_seg':
         print('Train KDNetSeg model... use_bn={} dropout={}'
               .format(use_bn, dropout_ratio))
         model = KDNetSeg(
             out_dim=num_class, in_dim=in_dim,
-            dropout_ratio=dropout_ratio, use_bn=use_bn, max_level=max_level)
+            dropout_ratio=dropout_ratio, use_bn=use_bn, max_level=max_level,
+            residual=residual)
 
         def kdnet_converter(batch, device=None, padding=None):
             # concat_examples to CPU at first.
@@ -134,8 +137,8 @@ def main():
               .format(use_bn, dropout_ratio, normalize, residual))
         model = KDContextNetSeg(
             out_dim=num_class, in_dim=in_dim,
-            dropout_ratio=dropout_ratio, use_bn=use_bn, normalize=True,)
-
+            dropout_ratio=dropout_ratio, use_bn=use_bn, normalize=True,
+            residual=residual)
     else:
         raise ValueError('[ERROR] Invalid method {}'.format(method))
 
