@@ -144,12 +144,12 @@ def main():
         model = KDContextNetCls(
             out_dim=num_class, in_dim=3,
             dropout_ratio=dropout_ratio, use_bn=use_bn,
+            # Below is for non-default customization
             levels=[3, 6, 9],
             feature_learning_mlp_list=[
                 [32, 32, 128], [64, 64, 256], [128, 128, 512]],
             feature_aggregation_mlp_list=[[128], [256], [512]]
         )
-        # levels=[3, 6, 9]
     else:
         raise ValueError('[ERROR] Invalid method {}'.format(method))
 
@@ -165,6 +165,7 @@ def main():
         serializers.load_npz(
             os.path.join(out_dir, args.model_filename), classifier)
     if device >= 0:
+        print('using gpu {}'.format(device))
         chainer.cuda.get_device_from_id(device).use()
         classifier.to_gpu()  # Copy the model to the GPU
 

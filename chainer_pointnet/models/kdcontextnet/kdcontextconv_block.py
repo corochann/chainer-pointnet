@@ -99,7 +99,7 @@ class KDContextConvBlock(chainer.Chain):
         bs, ch, n, _ = h1.shape
         assert n % self.m == 0
         h1 = functions.reshape(h1, (bs, ch, n//self.m, self.m))
-        h_local = functions.sigmoid(gy) * h1
+        h_local = functions.broadcast_to(functions.sigmoid(gy), h1.shape) * h1
         del gy, h0, h1
         h_local = functions.reshape(h_local, (bs, ch, n, 1))
         # 2. Global Contextual Cues
@@ -109,22 +109,20 @@ class KDContextConvBlock(chainer.Chain):
         # h3 is used for H(x_j) of Eq(3) of 3DContextNet paper.
         bs, ch, n, _ = h2.shape
         assert n % self.m == 0
-        h2 = functions.reshape(h2, (bs, ch, n//self.m, self.m))
-        h2 = functions.transpose(h2, (0, 2, 1, 3))
-        h2 = functions.reshape(h2, (bs * n//self.m, ch, self.m))  # (bs,ch,hw)
-        # TODO: here, I want to try normalizing `h2` vector along `ch` axis.
-        # h2_trans = functions.transpose(h2, (0, 2, 1))  # (bs,hw,ch)
-        # g (bs, hw, hw), where hw=`self.m`
+
+        # TODO: support other symmetric function
+        # h2, h3 (batchsize, ch, N, 1) -> (bs, ch, N//m)
+        h2 = functions.max_pooling_2d(h2, ksize=(self.m, 1))[:, :, :, 0]
+        h3 = functions.max_pooling_2d(h3, ksize=(self.m, 1))[:, :, :, 0]
+
+        # g (bs, hw, hw), where hw=`n//self.m`
         g = functions.matmul(h2, h2, transa=True)
-        h3 = functions.reshape(h3, (bs, ch, n//self.m, self.m))
-        h3 = functions.transpose(h3, (0, 2, 1, 3))
-        h3 = functions.reshape(h3, (bs * n//self.m, ch, self.m))  # (bs,ch,hw)
         # g(x_i, x_j) / C(x) can be replaced by softmax calculation.
         h_global = functions.matmul(h3, functions.softmax(g, axis=1))
         del g, h2, h3
-        # (bs*self.m,ch,hw) -> (bs, ch, h, 1)
-        h_global = functions.reshape(h_global, (bs, n//self.m, ch, self.m))
-        h_global = functions.transpose(h_global, (0, 2, 1, 3))
+        # (bs, ch, hw=N//m) -> (bs, ch, N, 1)
+        h_global = functions.reshape(h_global, (bs, ch, n//self.m, 1))
+        h_global = functions.broadcast_to(h_global, (bs, ch, n//self.m, self.m))
         h_global = functions.reshape(h_global, (bs, ch, n, 1))
 
         # Feature Aggregation Stage
