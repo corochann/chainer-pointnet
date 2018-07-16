@@ -44,6 +44,8 @@ def main():
     parser.add_argument('--resume', type=str, default='')
     parser.add_argument('--trans', type=strtobool, default='true')
     parser.add_argument('--use_bn', type=strtobool, default='true')
+    parser.add_argument('--normalize', type=strtobool, default='false')
+    parser.add_argument('--residual', type=strtobool, default='false')
     args = parser.parse_args()
 
     seed = args.seed
@@ -95,6 +97,8 @@ def main():
     # conv_layers = args.conv_layers
     trans = args.trans
     use_bn = args.use_bn
+    normalize = args.normalize
+    residual = args.residual
     dropout_ratio = args.dropout_ratio
     from chainer.dataset.convert import concat_examples
     converter = concat_examples
@@ -140,7 +144,8 @@ def main():
         converter = kdnet_converter
     elif method == 'kdcontextnet_cls':
         print('Train KDContextNetCls model... use_bn={} dropout={}'
-              .format(use_bn, dropout_ratio))
+              'normalize={} residual={}'
+              .format(use_bn, dropout_ratio, normalize, residual))
         model = KDContextNetCls(
             out_dim=num_class, in_dim=3,
             dropout_ratio=dropout_ratio, use_bn=use_bn,
@@ -149,7 +154,7 @@ def main():
             feature_learning_mlp_list=[
                 [32, 32, 128], [64, 64, 256], [128, 128, 512]],
             feature_aggregation_mlp_list=[[128], [256], [512]],
-            normalize=True
+            normalize=normalize
         )
     else:
         raise ValueError('[ERROR] Invalid method {}'.format(method))

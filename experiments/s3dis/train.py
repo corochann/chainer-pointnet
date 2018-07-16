@@ -41,6 +41,8 @@ def main():
     parser.add_argument('--resume', type=str, default='')
     parser.add_argument('--trans', type=strtobool, default='false')
     parser.add_argument('--use_bn', type=strtobool, default='true')
+    parser.add_argument('--normalize', type=strtobool, default='false')
+    parser.add_argument('--residual', type=strtobool, default='false')
     args = parser.parse_args()
 
     seed = args.seed
@@ -90,6 +92,8 @@ def main():
     trans = args.trans
     use_bn = args.use_bn
     dropout_ratio = args.dropout_ratio
+    normalize = args.normalize
+    residual = args.residual
     converter = concat_examples
     if method == 'point_seg':
         print('Train PointNetSeg model... trans={} use_bn={} dropout={}'
@@ -125,11 +129,13 @@ def main():
 
         converter = kdnet_converter
     elif method == 'kdcontextnet_seg':
-        print('Train KDContextNetSeg model... use_bn={} dropout={}'
-              .format(use_bn, dropout_ratio))
+        print('Train KDContextNetSeg model... use_bn={} dropout={} '
+              'normalize={} residual={}'
+              .format(use_bn, dropout_ratio, normalize, residual))
         model = KDContextNetSeg(
             out_dim=num_class, in_dim=in_dim,
-            dropout_ratio=dropout_ratio, use_bn=use_bn)
+            dropout_ratio=dropout_ratio, use_bn=use_bn, normalize=True,)
+
     else:
         raise ValueError('[ERROR] Invalid method {}'.format(method))
 
