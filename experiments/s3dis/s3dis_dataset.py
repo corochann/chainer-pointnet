@@ -3,7 +3,7 @@ import os
 import h5py
 
 import numpy as np
-from chainer_chemistry.datasets import NumpyTupleDataset
+from chainer_chemistry.datasets.numpy_tuple_dataset import NumpyTupleDataset
 
 
 MAX_NUM_POINT = 4096

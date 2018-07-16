@@ -148,7 +148,8 @@ def main():
             levels=[3, 6, 9],
             feature_learning_mlp_list=[
                 [32, 32, 128], [64, 64, 256], [128, 128, 512]],
-            feature_aggregation_mlp_list=[[128], [256], [512]]
+            feature_aggregation_mlp_list=[[128], [256], [512]],
+            normalize=True
         )
     else:
         raise ValueError('[ERROR] Invalid method {}'.format(method))

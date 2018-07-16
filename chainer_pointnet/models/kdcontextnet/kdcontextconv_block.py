@@ -30,6 +30,7 @@ class KDContextConvBlock(chainer.Chain):
         aggregation (bool): apply aggregation or not.
             Default is `True`, `num_point` will be `num_point//m` in output.
             `False` is set for deconvolution part, not reduce number of points.
+        normalize (bool): apply normalization to calculate global context cues
     """
 
     def __init__(self, in_channels, m,
@@ -38,7 +39,7 @@ class KDContextConvBlock(chainer.Chain):
                  ksize=1, stride=1, pad=0,
                  nobias=False, initialW=None, initial_bias=None, use_bn=True,
                  activation=functions.relu, dropout_ratio=-1,
-                 aggregation=True):
+                 aggregation=True, normalize=False):
         super(KDContextConvBlock, self).__init__()
         if feature_learning_mlp is None:
             print('feature_learning_mlp is None, value set automatically')
@@ -70,6 +71,7 @@ class KDContextConvBlock(chainer.Chain):
                             ) for i in range(len(famlp)-1)])
         self.m = m
         self.aggregation = aggregation
+        self.normalize = normalize
 
     def __call__(self, x):
         """Main forward computation
@@ -114,6 +116,8 @@ class KDContextConvBlock(chainer.Chain):
         # h2, h3 (batchsize, ch, N, 1) -> (bs, ch, N//m)
         h2 = functions.max_pooling_2d(h2, ksize=(self.m, 1))[:, :, :, 0]
         h3 = functions.max_pooling_2d(h3, ksize=(self.m, 1))[:, :, :, 0]
+        if self.normalize:
+            h2 = h2 * functions.rsqrt(functions.sum(h2 * h2, axis=1))
 
         # g (bs, hw, hw), where hw=`n//self.m`
         g = functions.matmul(h2, h2, transa=True)

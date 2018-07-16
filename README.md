@@ -26,6 +26,17 @@ git clone https://github.com/corochann/chainer-pointnet.git
 pip install -e chainer-pointnet
 ```
 
+Also, some extension library is used in some of the code,
+```bash
+# Chainer Chemistry
+git clone https://github.com/pfnet-research/chainer-chemistry.git
+pip install -e chainer-chemistry
+# ChainerEX
+git clone https://github.com/corochann/chainerex.git
+pip install -e chainerex
+```
+
+
 ## Model structure
 
 ### PointNet [2]
