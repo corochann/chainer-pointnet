@@ -36,7 +36,7 @@ class KDContextNetCls(chainer.Chain):
             Indicates final fully connection MLP size.
         normalize (bool): apply normalization to calculate global context cues
             in `KDContextConvBlock`.
-
+        residual (bool): use residual connection or not
     """
 
     def __init__(self, out_dim, in_dim=3, dropout_ratio=0.5,
@@ -44,7 +44,7 @@ class KDContextNetCls(chainer.Chain):
                  levels=None,
                  feature_learning_mlp_list=None,
                  feature_aggregation_mlp_list=None,
-                 fc_mlp_list=None, normalize=False
+                 fc_mlp_list=None, normalize=False, residual=False
                  ):
         super(KDContextNetCls, self).__init__()
         levels = levels or [5, 6, 7]
@@ -68,12 +68,12 @@ class KDContextNetCls(chainer.Chain):
                     in_channels_list[i], m=2 ** levels_diff[i],
                     feature_learning_mlp=feature_learning_mlp_list[i],
                     feature_aggregation_mlp=feature_aggregation_mlp_list[i],
-                    use_bn=use_bn, normalize=normalize
+                    use_bn=use_bn, normalize=normalize, residual=residual
                 ) for i in range(len(levels_diff))])
             self.fc_blocks = chainer.ChainList(
                 *[LinearBlock(
                     fcmlps[i], fcmlps[i+1], use_bn=use_bn,
-                    dropout_ratio=dropout_ratio
+                    dropout_ratio=dropout_ratio, residual=residual
                 ) for i in range(len(fcmlps)-1)])
             self.linear = links.Linear(fcmlps[-1], out_dim)
         self.compute_accuracy = compute_accuracy

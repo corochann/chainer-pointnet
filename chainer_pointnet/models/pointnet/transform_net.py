@@ -14,15 +14,23 @@ class TransformModule(chainer.Chain):
 
     This class produces transform matrix
     Input is (minibatch, K, N, 1), output is (minibatch, K, K)
+
+    Args:
+        k (int): hidden layer's coordinate dimension
+        use_bn (bool): use batch normalization or not
+        residual (bool): use residual connection or not
     """
 
-    def __init__(self, k=3, use_bn=True):
+    def __init__(self, k=3, use_bn=True, residual=False):
         super(TransformModule, self).__init__()
         initial_bias = numpy.identity(k, dtype=numpy.float32).ravel()
         with self.init_scope():
-            self.conv_block1 = ConvBlock(k, 64, ksize=1, use_bn=use_bn)
-            self.conv_block2 = ConvBlock(64, 128, ksize=1, use_bn=use_bn)
-            self.conv_block3 = ConvBlock(128, 1024, ksize=1, use_bn=use_bn)
+            self.conv_block1 = ConvBlock(k, 64, ksize=1, use_bn=use_bn,
+                                         residual=residual)
+            self.conv_block2 = ConvBlock(64, 128, ksize=1, use_bn=use_bn,
+                                         residual=residual)
+            self.conv_block3 = ConvBlock(128, 1024, ksize=1, use_bn=use_bn,
+                                         residual=residual)
             # [Note]
             # Original paper uses BN for fc layer as well.
             # https://github.com/charlesq34/pointnet/blob/master/models/transform_nets.py#L34
@@ -63,12 +71,18 @@ class TransformNet(chainer.Chain):
     This class can be used for Both InputTransformNet & FeatureTransformNet
     Input is (minibatch, K, N, 1),
     output is (minibatch, K, N, 1), which is transformed
+
+    Args:
+        k (int): hidden layer's coordinate dimension
+        use_bn (bool): use batch normalization or not
+        residual (bool): use residual connection or not
     """
 
-    def __init__(self, k=3, use_bn=True):
+    def __init__(self, k=3, use_bn=True, residual=False):
         super(TransformNet, self).__init__()
         with self.init_scope():
-            self.trans_module = TransformModule(k=k, use_bn=use_bn)
+            self.trans_module = TransformModule(
+                k=k, use_bn=use_bn, residual=residual)
 
     def __call__(self, x):
         t = self.trans_module(x)

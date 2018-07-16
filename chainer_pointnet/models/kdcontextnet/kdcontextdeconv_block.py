@@ -33,6 +33,7 @@ class KDContextDeconvBlock(chainer.Chain):
         dropout_ratio (float): dropout ratio, set negative value to skip
             dropout
         normalize (bool): apply normalization to calculate global context cues
+        residual (bool): use residual connection or not
     """
 
     def __init__(self, in_channels, m, in_channels_skip=None,
@@ -41,7 +42,8 @@ class KDContextDeconvBlock(chainer.Chain):
                  feature_aggregation_mlp=None,
                  ksize=1, stride=1, pad=0,
                  nobias=False, initialW=None, initial_bias=None, use_bn=True,
-                 activation=functions.relu, dropout_ratio=-1, normalize=False):
+                 activation=functions.relu, dropout_ratio=-1, normalize=False,
+                 residual=False):
         super(KDContextDeconvBlock, self).__init__()
         if in_channels_skip is None:
             in_channels_context = None
@@ -65,7 +67,7 @@ class KDContextDeconvBlock(chainer.Chain):
                 nobias=nobias, initialW=initialW, initial_bias=initial_bias,
                 use_bn=use_bn, activation=activation,
                 dropout_ratio=dropout_ratio, aggregation=False,
-                normalize=normalize)
+                normalize=normalize, residual=residual)
         self.m = m
         self.out_deconv_channels = out_deconv_channels
 

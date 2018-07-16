@@ -12,7 +12,7 @@ from chainer_pointnet.utils.grouping import _l2_norm
 class FeaturePropagationModule(chainer.Chain):
 
     def __init__(self, mlp, in_channels=None, use_bn=True,
-                 activation=functions.relu):
+                 activation=functions.relu, residual=False):
         super(FeaturePropagationModule, self).__init__()
         # Feature Extractor channel list
         assert isinstance(mlp, list)
@@ -21,7 +21,8 @@ class FeaturePropagationModule(chainer.Chain):
             self.interpolation = InterpolationModule()
             self.feature_extractor_list = chainer.ChainList(
                 *[ConvBlock(fe_ch_list[i], fe_ch_list[i+1], ksize=1,
-                            use_bn=use_bn, activation=activation
+                            use_bn=use_bn, activation=activation,
+                            residual=residual
                             ) for i in range(len(mlp))])
         self.use_bn = use_bn
 

@@ -18,45 +18,55 @@ class PointNet2ClsMSG(chainer.Chain):
 
     Input is (minibatch, K, N, 1), output is (minibatch, out_dim)
 
-        Args:
-            out_dim (int): output dimension, number of class for classification
-            in_dim: input dimension for each point. default is 3, (x, y, z).
-            dropout_ratio (float): dropout ratio
-            use_bn (bool): use batch normalization or not.
-            compute_accuracy (bool): compute & report accuracy or not
+    Args:
+        out_dim (int): output dimension, number of class for classification
+        in_dim: input dimension for each point. default is 3, (x, y, z).
+        dropout_ratio (float): dropout ratio
+        use_bn (bool): use batch normalization or not.
+        compute_accuracy (bool): compute & report accuracy or not
+        residual (bool): use residual connection or not
     """
 
     def __init__(self, out_dim, in_dim=3, dropout_ratio=0.5,
-                 use_bn=True, compute_accuracy=True):
+                 use_bn=True, compute_accuracy=True, residual=False):
         super(PointNet2ClsMSG, self).__init__()
         with self.init_scope():
             # initial_idx is set to ensure deterministic behavior of
             # fathest_point_sampling
             self.sam11 = SetAbstractionModule(
                 k=512, num_sample_in_region=16, radius=0.1,
-                mlp=[32, 32, 64], mlp2=None, initial_idx=0)
+                mlp=[32, 32, 64], mlp2=None, initial_idx=0,
+                residual=residual)
             self.sam12 = SetAbstractionModule(
                 k=512, num_sample_in_region=32, radius=0.2,
-                mlp=[64, 64, 128], mlp2=None, initial_idx=0)
+                mlp=[64, 64, 128], mlp2=None, initial_idx=0,
+                residual=residual)
             self.sam13 = SetAbstractionModule(
                 k=512, num_sample_in_region=128, radius=0.4,
-                mlp=[64, 96, 128], mlp2=None, initial_idx=0)
+                mlp=[64, 96, 128], mlp2=None, initial_idx=0,
+                residual=residual)
             self.sam21 = SetAbstractionModule(
                 k=128, num_sample_in_region=32, radius=0.2,
-                mlp=[64, 64, 128], mlp2=None, initial_idx=0)
+                mlp=[64, 64, 128], mlp2=None, initial_idx=0,
+                residual=residual)
             self.sam22 = SetAbstractionModule(
                 k=128, num_sample_in_region=64, radius=0.4,
-                mlp=[128, 128, 256], mlp2=None, initial_idx=0)
+                mlp=[128, 128, 256], mlp2=None, initial_idx=0,
+                residual=residual)
             self.sam23 = SetAbstractionModule(
                 k=128, num_sample_in_region=128, radius=0.8,
-                mlp=[128, 128, 256], mlp2=None, initial_idx=0)
+                mlp=[128, 128, 256], mlp2=None, initial_idx=0,
+                residual=residual)
             self.sam3 = SetAbstractionGroupAllModule(
-                mlp=[256, 512, 1024], mlp2=None)
+                mlp=[256, 512, 1024], mlp2=None,
+                residual=residual)
 
             self.fc_block4 = LinearBlock(
-                1024, 512, use_bn=use_bn, dropout_ratio=dropout_ratio)
+                1024, 512, use_bn=use_bn, dropout_ratio=dropout_ratio,
+                residual=residual)
             self.fc_block5 = LinearBlock(
-                512, 256, use_bn=use_bn, dropout_ratio=dropout_ratio)
+                512, 256, use_bn=use_bn, dropout_ratio=dropout_ratio,
+                residual=residual)
             self.fc6 = links.Linear(256, out_dim)
 
         self.compute_accuracy = compute_accuracy

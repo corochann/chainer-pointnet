@@ -31,6 +31,7 @@ class KDContextConvBlock(chainer.Chain):
             Default is `True`, `num_point` will be `num_point//m` in output.
             `False` is set for deconvolution part, not reduce number of points.
         normalize (bool): apply normalization to calculate global context cues
+        residual (bool): use residual connection or not
     """
 
     def __init__(self, in_channels, m,
@@ -39,7 +40,7 @@ class KDContextConvBlock(chainer.Chain):
                  ksize=1, stride=1, pad=0,
                  nobias=False, initialW=None, initial_bias=None, use_bn=True,
                  activation=functions.relu, dropout_ratio=-1,
-                 aggregation=True, normalize=False):
+                 aggregation=True, normalize=False, residual=False):
         super(KDContextConvBlock, self).__init__()
         if feature_learning_mlp is None:
             print('feature_learning_mlp is None, value set automatically')
@@ -62,12 +63,14 @@ class KDContextConvBlock(chainer.Chain):
                             pad=pad, nobias=nobias, initialW=initialW,
                             initial_bias=initial_bias, use_bn=use_bn,
                             activation=activation, dropout_ratio=dropout_ratio,
+                            residual=residual
                             ) for i in range(len(flmlp)-1)])
             self.faconvs = chainer.ChainList(
                 *[ConvBlock(famlp[i], famlp[i + 1], ksize=ksize, stride=stride,
                             pad=pad, nobias=nobias, initialW=initialW,
                             initial_bias=initial_bias, use_bn=use_bn,
                             activation=activation, dropout_ratio=dropout_ratio,
+                            residual=residual
                             ) for i in range(len(famlp)-1)])
         self.m = m
         self.aggregation = aggregation

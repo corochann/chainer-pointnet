@@ -16,37 +16,46 @@ class PointNet2SegSSG(chainer.Chain):
 
     Input is (minibatch, K, N, 1), output is (minibatch, out_dim, N)
 
-        Args:
-            out_dim (int): output dimension, number of class for classification
-            in_dim (int): input dimension for each point. default is 3, (x, y, z).
-            dropout_ratio (float): dropout ratio
-            use_bn (bool): use batch normalization or not.
-            compute_accuracy (bool): compute & report accuracy or not
+    Args:
+        out_dim (int): output dimension, number of class for classification
+        in_dim (int): input dimension for each point. default is 3, (x, y, z).
+        dropout_ratio (float): dropout ratio
+        use_bn (bool): use batch normalization or not.
+        compute_accuracy (bool): compute & report accuracy or not
+        residual (bool): use residual connection or not
     """
 
     def __init__(self, out_dim, in_dim=3, dropout_ratio=0.5,
-                 use_bn=True, compute_accuracy=True):
+                 use_bn=True, compute_accuracy=True, residual=False):
         super(PointNet2SegSSG, self).__init__()
         with self.init_scope():
             self.sam1 = SetAbstractionModule(
                 k=1024, num_sample_in_region=32, radius=0.1, mlp=[32, 32, 64],
-                mlp2=None, use_bn=use_bn, return_distance=True)
+                mlp2=None, use_bn=use_bn, return_distance=True,
+                residual=residual)
             self.sam2 = SetAbstractionModule(
                 k=256, num_sample_in_region=32, radius=0.2, mlp=[64, 64, 128],
-                mlp2=None, use_bn=use_bn, return_distance=True)
+                mlp2=None, use_bn=use_bn, return_distance=True,
+                residual=residual)
             self.sam3 = SetAbstractionModule(
                 k=64, num_sample_in_region=32, radius=0.4, mlp=[128, 128, 256],
-                mlp2=None, use_bn=use_bn, return_distance=True)
+                mlp2=None, use_bn=use_bn, return_distance=True,
+                residual=residual)
             self.sam4 = SetAbstractionModule(
                 k=16, num_sample_in_region=32, radius=0.8, mlp=[256, 256, 512],
-                mlp2=None, use_bn=use_bn, return_distance=True)
+                mlp2=None, use_bn=use_bn, return_distance=True,
+                residual=residual)
 
-            self.fpm5 = FeaturePropagationModule(mlp=[256, 256], use_bn=use_bn)
-            self.fpm6 = FeaturePropagationModule(mlp=[256, 256], use_bn=use_bn)
-            self.fpm7 = FeaturePropagationModule(mlp=[256, 128], use_bn=use_bn)
-            self.fpm8 = FeaturePropagationModule(mlp=[128, 128, 128],
-                                                 use_bn=use_bn)
-            self.conv_block9 = ConvBlock(128, 128, ksize=1, use_bn=use_bn)
+            self.fpm5 = FeaturePropagationModule(
+                mlp=[256, 256], use_bn=use_bn, residual=residual)
+            self.fpm6 = FeaturePropagationModule(
+                mlp=[256, 256], use_bn=use_bn, residual=residual)
+            self.fpm7 = FeaturePropagationModule(
+                mlp=[256, 128], use_bn=use_bn, residual=residual)
+            self.fpm8 = FeaturePropagationModule(
+                mlp=[128, 128, 128], use_bn=use_bn, residual=residual)
+            self.conv_block9 = ConvBlock(
+                128, 128, ksize=1, use_bn=use_bn, residual=residual)
             self.conv10 = links.Convolution2D(128, out_dim, ksize=1)
 
         self.compute_accuracy = compute_accuracy

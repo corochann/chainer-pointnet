@@ -40,6 +40,7 @@ class KDContextNetSeg(chainer.Chain):
             Indicates each block's feature aggregation MLP size for decoder.
         normalize (bool): apply normalization to calculate global context cues
             in `KDContextConvBlock` & KDContextDeconvBlock.
+        residual (bool): use residual connection or not
     """
 
     def __init__(self, out_dim, in_dim=3, dropout_ratio=-1,
@@ -49,7 +50,7 @@ class KDContextNetSeg(chainer.Chain):
                  feature_aggregation_mlp_enc_list=None,
                  feature_learning_mlp_dec_list=None,
                  feature_aggregation_mlp_dec_list=None,
-                 fc_mlp_list=None, normalize=False
+                 fc_mlp_list=None, normalize=False, residual=False
                  ):
         super(KDContextNetSeg, self).__init__()
         levels = levels or [5, 7, 9]  # (32, 128, 512) receptive field.
@@ -84,7 +85,7 @@ class KDContextNetSeg(chainer.Chain):
                     in_channels_enc_list[i], m=2 ** levels_diff[i],
                     feature_learning_mlp=feature_learning_mlp_enc_list[i],
                     feature_aggregation_mlp=feature_aggregation_mlp_enc_list[i],
-                    use_bn=use_bn, normalize=normalize
+                    use_bn=use_bn, normalize=normalize, residual=residual
                 ) for i in range(len(levels_diff))])
             self.kdcontextdeconv_blocks = chainer.ChainList(
                 *[KDContextDeconvBlock(
@@ -92,11 +93,12 @@ class KDContextNetSeg(chainer.Chain):
                     out_deconv_channels=in_channels_dec_list[i]//2,
                     feature_learning_mlp=feature_learning_mlp_dec_list[i],
                     feature_aggregation_mlp=feature_aggregation_mlp_dec_list[i],
-                    use_bn=use_bn, normalize=normalize
+                    use_bn=use_bn, normalize=normalize, residual=residual
                 ) for i in range(len(levels_diff))])
             self.conv_blocks = chainer.ChainList(
                 *[ConvBlock(
                     fcmlps[i], fcmlps[i+1], ksize=1, use_bn=use_bn,
+                    residual=residual
                 ) for i in range(len(fcmlps)-1)])
             self.conv = links.Convolution2D(fcmlps[-1], out_dim, ksize=1)
         self.compute_accuracy = compute_accuracy

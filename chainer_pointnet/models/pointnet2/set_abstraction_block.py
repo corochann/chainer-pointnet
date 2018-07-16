@@ -13,7 +13,8 @@ class SetAbstractionModule(chainer.Chain):
     def __init__(self, k, num_sample_in_region, radius,
                  mlp, mlp2=None, in_channels=None, use_bn=True,
                  activation=functions.relu, initial_idx=None,
-                 skip_initial=True, return_distance=False):
+                 skip_initial=True, return_distance=False,
+                 residual=False):
         # k is number of sampled point (num_region)
         super(SetAbstractionModule, self).__init__()
         # Feature Extractor channel list
@@ -31,11 +32,13 @@ class SetAbstractionModule(chainer.Chain):
                 skip_initial=skip_initial, return_distance=return_distance)
             self.feature_extractor_list = chainer.ChainList(
                 *[ConvBlock(fe_ch_list[i], fe_ch_list[i+1], ksize=1,
-                            use_bn=use_bn, activation=activation
+                            use_bn=use_bn, activation=activation,
+                            residual=residual
                             ) for i in range(len(mlp))])
             self.head_list = chainer.ChainList(
                 *[ConvBlock(head_ch_list[i], head_ch_list[i + 1], ksize=1,
-                            use_bn=use_bn, activation=activation
+                            use_bn=use_bn, activation=activation,
+                            residual=residual
                             ) for i in range(len(mlp2))])
         self.use_bn = use_bn
 

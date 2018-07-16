@@ -40,31 +40,44 @@ class PointNetSeg(chainer.Chain):
             trans_lam2 (float): regularization term for feature transform
                 used in training. it is simply ignored when `trans` is False.
             compute_accuracy (bool): compute & report accuracy or not
+            residual (bool): use residual connection or not
     """
 
     def __init__(self, out_dim, in_dim=3, middle_dim=64, dropout_ratio=0.3,
                  use_bn=True, trans=True, trans_lam1=0.001, trans_lam2=0.001,
-                 compute_accuracy=True):
+                 compute_accuracy=True, residual=False):
         super(PointNetSeg, self).__init__()
         with self.init_scope():
             if trans:
-                self.input_transform_net = TransformNet(k=in_dim, use_bn=use_bn)
+                self.input_transform_net = TransformNet(
+                    k=in_dim, use_bn=use_bn, residual=residual)
 
-            self.conv_block1 = ConvBlock(in_dim, 64, ksize=1, use_bn=use_bn)
-            self.conv_block2 = ConvBlock(64, middle_dim, ksize=1, use_bn=use_bn)
+            self.conv_block1 = ConvBlock(
+                in_dim, 64, ksize=1, use_bn=use_bn, residual=residual)
+            self.conv_block2 = ConvBlock(
+                64, middle_dim, ksize=1, use_bn=use_bn, residual=residual)
             if trans:
-                self.feature_transform_net = TransformNet(k=middle_dim, use_bn=use_bn)
+                self.feature_transform_net = TransformNet(
+                    k=middle_dim, use_bn=use_bn, residual=residual)
 
-            self.conv_block3 = ConvBlock(middle_dim, 64, ksize=1, use_bn=use_bn)
-            self.conv_block4 = ConvBlock(64, 128, ksize=1, use_bn=use_bn)
-            self.conv_block5 = ConvBlock(128, 1024, ksize=1, use_bn=use_bn)
+            self.conv_block3 = ConvBlock(
+                middle_dim, 64, ksize=1, use_bn=use_bn, residual=residual)
+            self.conv_block4 = ConvBlock(
+                64, 128, ksize=1, use_bn=use_bn, residual=residual)
+            self.conv_block5 = ConvBlock(
+                128, 1024, ksize=1, use_bn=use_bn, residual=residual)
 
             # --- concat point_feat & global_feat ---
-            self.conv_block6 = ConvBlock(middle_dim + 1024, 512, ksize=1, use_bn=use_bn)
-            self.conv_block7 = ConvBlock(512, 256, ksize=1, use_bn=use_bn)
-            self.conv_block8 = ConvBlock(256, 128, ksize=1, use_bn=use_bn)
-            self.conv_block9 = ConvBlock(128, 128, ksize=1, use_bn=use_bn)
-            self.conv10 = links.Convolution2D(128, out_dim, ksize=1)
+            self.conv_block6 = ConvBlock(
+                middle_dim + 1024, 512, ksize=1, use_bn=use_bn, residual=residual)
+            self.conv_block7 = ConvBlock(
+                512, 256, ksize=1, use_bn=use_bn, residual=residual)
+            self.conv_block8 = ConvBlock(
+                256, 128, ksize=1, use_bn=use_bn, residual=residual)
+            self.conv_block9 = ConvBlock(
+                128, 128, ksize=1, use_bn=use_bn, residual=residual)
+            self.conv10 = links.Convolution2D(
+                128, out_dim, ksize=1)
 
         self.in_dim = in_dim
         self.trans = trans

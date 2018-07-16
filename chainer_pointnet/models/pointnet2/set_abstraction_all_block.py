@@ -12,7 +12,7 @@ from chainer_pointnet.utils.sampling import farthest_point_sampling
 class SetAbstractionGroupAllModule(chainer.Chain):
 
     def __init__(self, mlp, mlp2, in_channels=None, use_bn=True,
-                 activation=functions.relu):
+                 activation=functions.relu, residual=False):
         # k is number of sampled point (num_region)
         super(SetAbstractionGroupAllModule, self).__init__()
         # Feature Extractor channel list
@@ -27,11 +27,13 @@ class SetAbstractionGroupAllModule(chainer.Chain):
             self.sampling_grouping = SamplingGroupingAllModule()
             self.feature_extractor_list = chainer.ChainList(
                 *[ConvBlock(fe_ch_list[i], fe_ch_list[i+1], ksize=1,
-                            use_bn=use_bn, activation=activation
+                            use_bn=use_bn, activation=activation,
+                            residual=residual
                             ) for i in range(len(mlp))])
             self.head_list = chainer.ChainList(
                 *[ConvBlock(head_ch_list[i], head_ch_list[i + 1], ksize=1,
-                            use_bn=use_bn, activation=activation
+                            use_bn=use_bn, activation=activation,
+                            residual=residual
                             ) for i in range(len(mlp2))])
         self.use_bn = use_bn
 

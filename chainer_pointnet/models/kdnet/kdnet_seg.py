@@ -15,17 +15,18 @@ class KDNetSeg(chainer.Chain):
     Here, max_level=log2(N) denotes the level of KDTree.
     `split_dims[i]` is numpy array, represents i-th level split dimension axis.
 
-        Args:
-            out_dim (int): output dimension, number of class for classification
-            in_dim: input dimension for each point. default is 3, (x, y, z).
-            dropout_ratio (float): dropout ratio
-            use_bn (bool): use batch normalization or not.
-            compute_accuracy (bool): compute & report accuracy or not
-            cdim (int): coordinate dimension in KDTree, usually 3 (x, y, z).
+    Args:
+        out_dim (int): output dimension, number of class for classification
+        in_dim: input dimension for each point. default is 3, (x, y, z).
+        dropout_ratio (float): dropout ratio
+        use_bn (bool): use batch normalization or not.
+        compute_accuracy (bool): compute & report accuracy or not
+        cdim (int): coordinate dimension in KDTree, usually 3 (x, y, z).
+        residual (bool): use residual connection or not
     """
 
     def __init__(self, out_dim, in_dim=3, max_level=10, dropout_ratio=0.0,
-                 use_bn=True, compute_accuracy=True, cdim=3):
+                 use_bn=True, compute_accuracy=True, cdim=3, residual=False):
         super(KDNetSeg, self).__init__()
         if max_level <= 10:
             # depth 10
@@ -56,7 +57,8 @@ class KDNetSeg(chainer.Chain):
                            cdim=cdim)
                   for i in range(1, len(out_ch_list))])
             self.conv_block = ConvBlock(
-                out_ch_list[0], out_ch_list[0], ksize=1, use_bn=use_bn)
+                out_ch_list[0], out_ch_list[0], ksize=1, use_bn=use_bn,
+                residual=residual)
             self.conv = links.Convolution2D(out_ch_list[0], out_dim, ksize=1)
         self.compute_accuracy = compute_accuracy
         self.max_level = max_level

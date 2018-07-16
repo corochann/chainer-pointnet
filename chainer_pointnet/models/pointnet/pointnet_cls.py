@@ -42,30 +42,40 @@ class PointNetCls(chainer.Chain):
             trans_lam2 (float): regularization term for feature transform
                 used in training. it is simply ignored when `trans` is False.
             compute_accuracy (bool): compute & report accuracy or not
+            residual (bool): use residual connection or not
     """
 
     def __init__(self, out_dim, in_dim=3, middle_dim=64, dropout_ratio=0.3,
                  use_bn=True, trans=True, trans_lam1=0.001, trans_lam2=0.001,
-                 compute_accuracy=True):
+                 compute_accuracy=True, residual=False):
         super(PointNetCls, self).__init__()
         with self.init_scope():
             if trans:
-                self.input_transform_net = TransformNet(k=in_dim, use_bn=use_bn)
+                self.input_transform_net = TransformNet(
+                    k=in_dim, use_bn=use_bn, residual=residual)
 
-            self.conv_block1 = ConvBlock(in_dim, 64, ksize=1, use_bn=use_bn)
-            self.conv_block2 = ConvBlock(64, middle_dim, ksize=1, use_bn=use_bn)
+            self.conv_block1 = ConvBlock(
+                in_dim, 64, ksize=1, use_bn=use_bn, residual=residual)
+            self.conv_block2 = ConvBlock(
+                64, middle_dim, ksize=1, use_bn=use_bn, residual=residual)
             if trans:
-                self.feature_transform_net = TransformNet(k=middle_dim, use_bn=use_bn)
+                self.feature_transform_net = TransformNet(
+                    k=middle_dim, use_bn=use_bn, residual=residual)
 
-            self.conv_block3 = ConvBlock(middle_dim, 64, ksize=1, use_bn=use_bn)
-            self.conv_block4 = ConvBlock(64, 128, ksize=1, use_bn=use_bn)
-            self.conv_block5 = ConvBlock(128, 1024, ksize=1, use_bn=use_bn)
+            self.conv_block3 = ConvBlock(
+                middle_dim, 64, ksize=1, use_bn=use_bn, residual=residual)
+            self.conv_block4 = ConvBlock(
+                64, 128, ksize=1, use_bn=use_bn, residual=residual)
+            self.conv_block5 = ConvBlock(
+                128, 1024, ksize=1, use_bn=use_bn, residual=residual)
 
             # original impl. uses `keep_prob=0.7`.
             self.fc_block6 = LinearBlock(
-                1024, 512, use_bn=use_bn, dropout_ratio=dropout_ratio)
+                1024, 512, use_bn=use_bn, dropout_ratio=dropout_ratio,
+                residual=residual)
             self.fc_block7 = LinearBlock(
-                512, 256, use_bn=use_bn, dropout_ratio=dropout_ratio)
+                512, 256, use_bn=use_bn, dropout_ratio=dropout_ratio,
+                residual=residual)
             self.fc8 = links.Linear(256, out_dim)
 
         self.in_dim = in_dim
