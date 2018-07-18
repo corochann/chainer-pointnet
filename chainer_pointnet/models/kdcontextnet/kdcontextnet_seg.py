@@ -145,9 +145,17 @@ class KDContextNetSeg(chainer.Chain):
 if __name__ == '__main__':
     from chainer_pointnet.utils.kdtree import construct_kdtree_data
 
+    device = -1
     batchsize = 1
     num_point = 135  # try 100, 128, 135
     max_level = 9  # 2^7 -> 128. Final num_point will be 128
+    big_data_test = True
+    if big_data_test:
+        device = 0
+        # max_level=18, num_point 262144 run on GPU with batchsize=1
+        max_level = 18
+        num_point = 2 ** max_level
+        print('max_level', max_level, 'num_point', num_point)
     dim = 3
     point_set = numpy.random.rand(num_point, dim).astype(numpy.float32)
     print('point_set', point_set.shape)
@@ -159,6 +167,10 @@ if __name__ == '__main__':
     # print('split_dims', split_dims.shape, split_dims.dtype)
     pts = numpy.transpose(points, (1, 0))[None, :, :, None]
     print('pts', pts.shape, split_dims.shape)
+    if device >= 0:
+        chainer.cuda.get_device_from_id(device).use()  # Make a specified GPU current
+        kdnet.to_gpu()  # Copy the model to the GPU
+        pts = chainer.cuda.to_gpu(pts)
     out = kdnet.calc(pts)
     print('out', out.shape)
 

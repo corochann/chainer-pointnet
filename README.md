@@ -163,11 +163,14 @@ epoch       main/loss   main/cls_loss  main/trans_loss1  main/trans_loss2  main/
 # PointNet2 SSG
 250         0.0226786                                                      0.989821       0.631495              0.898638                  1e-05       54240.2
 # PointNet2 MSG
+250         0.0217696                                                      0.991653       0.610621              0.892628                  1e-05       160451
 
 # KDNet with bn & dropout_ratio=0.3
 250         0.10106                                                        0.962235       1.01367               0.820913                  1e-05       20324
 # KDContextNet with bn & dropout_ratio=0.3
 250         0.126861                                                       0.952769       0.835642              0.825321                  1e-05       31900.6
+# KDContextNet with bn & dropout_ratio=0.3 & normalize=1 & residual=1
+250         0.0804102                                                      0.9716         0.824233              0.838542                  1e-05       28028.5
 ```
 
 KDNet seems "overfit" to the train data, meaning that its representation power is strong but it fails to generalize to test data.
